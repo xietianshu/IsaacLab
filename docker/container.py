@@ -6,13 +6,13 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
-from statefile import Statefile
-import x11_utils
-import apptainer_utils
-from isaaclab_container_interface import IsaacLabContainerInterface
+from isaaclab_container_utils.statefile import Statefile
+from isaaclab_container_utils import x11_utils
+from isaaclab_container_utils import apptainer_utils
+from isaaclab_container_utils.isaaclab_container_interface import IsaacLabContainerInterface
 
 def main():
-    parser = argparse.ArgumentParser(description="Utility for handling Docker in Isaac Lab.")
+    parser = argparse.ArgumentParser(description="Utility for using Docker with Isaac Lab.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("start", help="Build the docker image and create the container in detached mode.")
@@ -80,10 +80,9 @@ def main():
             apptainer_utils.install_apptainer()
         container_interface.check_image_exists()
         apptainer_utils.check_docker_version_compatible()
-        with open(container_interface.base_dir / ".env.base") as f:
-            env_vars = dict(line.strip().split('=', 1) for line in f if '=' in line)
-        cluster_login = env_vars['CLUSTER_LOGIN']
-        cluster_sif_path = env_vars['CLUSTER_SIF_PATH']
+        cluster_login = container_interface.dot_vars['CLUSTER_LOGIN']
+        cluster_isaaclab_dir = container_interface.dot_vars['CLUSTER_ISAACLAB_DIR']
+        cluster_sif_path = container_interface.dot_vars['CLUSTER_SIF_PATH']
         exports_dir = container_interface.base_dir / "exports"
         exports_dir.mkdir(parents=True, exist_ok=True)
         for file in exports_dir.glob(f"{container_interface.container_name}*"):
@@ -94,19 +93,16 @@ def main():
         subprocess.run(["ssh", cluster_login, f"mkdir -p {cluster_sif_path}"], check=True)
         subprocess.run(["scp", f"{container_interface.container_name}.tar", f"{cluster_login}:{cluster_sif_path}/{container_interface.container_name}.tar"], check=True)
     elif args.command == "job":
-        with open(container_interface.base_dir / ".env.base") as f:
-            env_vars = dict(line.strip().split('=', 1) for line in f if '=' in line)
-        cluster_login = env_vars['CLUSTER_LOGIN']
-        cluster_isaaclab_dir = env_vars['CLUSTER_ISAACLAB_DIR']
-        apptainer_utils.check_singularity_image_exists(container_interface.container_name)
+        cluster_login = container_interface.dot_vars['CLUSTER_LOGIN']
+        cluster_isaaclab_dir = container_interface.dot_vars['CLUSTER_ISAACLAB_DIR']
+        apptainer_utils.check_singularity_image_exists(container_interface)
         subprocess.run(["ssh", cluster_login, f"mkdir -p {cluster_isaaclab_dir}"], check=True)
         print("[INFO] Syncing Isaac Lab code...")
         subprocess.run(["rsync", "-rh", "--exclude","*.git*","--filter=:- .dockerignore", f"/{container_interface.base_dir}/..", f"{cluster_login}:{cluster_isaaclab_dir}"], check=True)
         print("[INFO] Executing job script...")
         subprocess.run(["ssh", cluster_login, f"cd {cluster_isaaclab_dir} && sbatch {cluster_isaaclab_dir}/docker/cluster/submit_job.sh", cluster_isaaclab_dir, f"{container_interface.container_name}"] + args.job_args, check=True)
     else:
-        print(f"[Error] Invalid command provided: {mode}", file=sys.stderr)
-        print_help()
+        print(f"[Error] Invalid command provided: {args.command}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":
