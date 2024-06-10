@@ -33,61 +33,77 @@ def main():
         sys.exit(1)
 
     base_dir=Path(__file__).resolve().parent
+    # Creating statefile
     statefile = Statefile(statefile=base_dir / ".container.yaml")
-    ilci = IsaacLabContainerInterface(base_dir=base_dir, 
+    container_interface = IsaacLabContainerInterface(base_dir=base_dir, 
                                       profile=args.profile,
                                       statefile=statefile)
 
-    print(f"[INFO] Using container profile: {ilci.profile}")
+    print(f"[INFO] Using container profile: {container_interface.profile}")
 
     if args.command == "start":
-        print(f"[INFO] Building the docker image and starting the container {ilci.container_name} in the background...")
-        os.chdir(ilci.base_dir)
-        ilci.add_yamls += x11_utils.x11_check(statefile)
+        print(f"[INFO] Building the docker image and starting the container {container_interface.container_name} in the background...")
+        os.chdir(container_interface.base_dir)
+        container_interface.add_yamls += x11_utils.x11_check(statefile)
         subprocess.run(["docker", "compose", "--file", "docker-compose.yaml", "--env-file", ".env.base", "build", "isaac-lab-base"], check=True)
-        subprocess.run(["docker", "compose"] + ilci.add_yamls + ilci.add_profiles + ilci.add_envs + ["up", "--detach", "--build", "--remove-orphans"], check=True)
+        subprocess.run(["docker", "compose"] + container_interface.add_yamls + container_interface.add_profiles + container_interface.add_envs + ["up", "--detach", "--build", "--remove-orphans"], check=True)
     elif args.command == "enter":
-        ilci.is_container_running()
-        print(f"[INFO] Entering the existing {ilci.container_name} container in a bash session...")
-        os.chdir(ilci.base_dir)
-        subprocess.run(["docker", "exec", "--interactive", "--tty", f"{ilci.container_name}", "bash"], check=True)
+        container_interface.is_container_running()
+        print(f"[INFO] Entering the existing {container_interface.container_name} container in a bash session...")
+        os.chdir(container_interface.base_dir)
+        subprocess.run(["docker", "exec", "--interactive", "--tty", f"{container_interface.container_name}", "bash"], check=True)
     elif args.command == "copy":
-        ilci.copy_artifacts()
+        container_interface.is_container_running()
+        print(f"[INFO] Copying artifacts from the 'isaac-lab-{container_interface.profile}' container...")
+        artifacts = {
+            "logs": "logs",
+            "docs/_build": "docs/_build",
+            "data_storage": "data_storage"
+        }
+        for container_path, host_path in artifacts.items():
+            print(f"\t - /workspace/isaaclab/{container_path} -> {container_interface.base_dir}/artifacts/{host_path}")
+        os.chdir(container_interface.base_dir)
+        for path in artifacts.values():
+            shutil.rmtree(container_interface.base_dir / f"artifacts/{path}", ignore_errors=True)
+        (container_interface.base_dir / "artifacts/docs").mkdir(parents=True, exist_ok=True)
+        for container_path, host_path in artifacts.items():
+            subprocess.run(["docker", "cp", f"isaac-lab-{container_interface.profile}:/workspace/isaaclab/{container_path}", f"./artifacts/{host_path}"], check=True)
+        print("\n[INFO] Finished copying the artifacts from the container.")
     elif args.command == "stop":
-        ilci.is_container_running()
-        print(f"[INFO] Stopping the launched docker container {ilci.container_name}...")
-        os.chdir(ilci.base_dir)
-        subprocess.run(["docker", "compose", "--file", "docker-compose.yaml"] + ilci.add_profiles + ilci.add_envs + ["down"], check=True)
+        container_interface.is_container_running()
+        print(f"[INFO] Stopping the launched docker container {container_interface.container_name}...")
+        os.chdir(container_interface.base_dir)
+        subprocess.run(["docker", "compose", "--file", "docker-compose.yaml"] + container_interface.add_profiles + container_interface.add_envs + ["down"], check=True)
         x11_utils.x11_cleanup(statefile)
     elif args.command == "push":
         if not shutil.which("apptainer"):
             apptainer_utils.install_apptainer()
-        ilci.check_image_exists()
+        container_interface.check_image_exists()
         apptainer_utils.check_docker_version_compatible()
-        with open(ilci.base_dir / ".env.base") as f:
+        with open(container_interface.base_dir / ".env.base") as f:
             env_vars = dict(line.strip().split('=', 1) for line in f if '=' in line)
         cluster_login = env_vars['CLUSTER_LOGIN']
         cluster_sif_path = env_vars['CLUSTER_SIF_PATH']
-        exports_dir = ilci.base_dir / "exports"
+        exports_dir = container_interface.base_dir / "exports"
         exports_dir.mkdir(parents=True, exist_ok=True)
-        for file in exports_dir.glob(f"{ilci.container_name}*"):
+        for file in exports_dir.glob(f"{container_interface.container_name}*"):
             file.unlink()
         os.chdir(exports_dir)
-        subprocess.run(["APPTAINER_NOHTTPS=1", "apptainer", "build", "--sandbox", "--fakeroot", f"{ilci.container_name}.sif", f"docker-daemon://{ilci.image_name}"], check=True, shell=True)
-        subprocess.run(["tar", "-cvf", f"{ilci.container_name}.tar", f"{ilci.container_name}.sif"], check=True)
+        subprocess.run(["APPTAINER_NOHTTPS=1", "apptainer", "build", "--sandbox", "--fakeroot", f"{container_interface.container_name}.sif", f"docker-daemon://{container_interface.image_name}"], check=True, shell=True)
+        subprocess.run(["tar", "-cvf", f"{container_interface.container_name}.tar", f"{container_interface.container_name}.sif"], check=True)
         subprocess.run(["ssh", cluster_login, f"mkdir -p {cluster_sif_path}"], check=True)
-        subprocess.run(["scp", f"{ilci.container_name}.tar", f"{cluster_login}:{cluster_sif_path}/{ilci.container_name}.tar"], check=True)
+        subprocess.run(["scp", f"{container_interface.container_name}.tar", f"{cluster_login}:{cluster_sif_path}/{container_interface.container_name}.tar"], check=True)
     elif args.command == "job":
-        with open(ilci.base_dir / ".env.base") as f:
+        with open(container_interface.base_dir / ".env.base") as f:
             env_vars = dict(line.strip().split('=', 1) for line in f if '=' in line)
         cluster_login = env_vars['CLUSTER_LOGIN']
         cluster_isaaclab_dir = env_vars['CLUSTER_ISAACLAB_DIR']
-        apptainer_utils.check_singularity_image_exists(ilci.container_name)
+        apptainer_utils.check_singularity_image_exists(container_interface.container_name)
         subprocess.run(["ssh", cluster_login, f"mkdir -p {cluster_isaaclab_dir}"], check=True)
         print("[INFO] Syncing Isaac Lab code...")
-        subprocess.run(["rsync", "-rh", "--exclude","*.git*","--filter=:- .dockerignore", f"/{ilci.base_dir}/..", f"{cluster_login}:{cluster_isaaclab_dir}"], check=True)
+        subprocess.run(["rsync", "-rh", "--exclude","*.git*","--filter=:- .dockerignore", f"/{container_interface.base_dir}/..", f"{cluster_login}:{cluster_isaaclab_dir}"], check=True)
         print("[INFO] Executing job script...")
-        subprocess.run(["ssh", cluster_login, f"cd {cluster_isaaclab_dir} && sbatch {cluster_isaaclab_dir}/docker/cluster/submit_job.sh", cluster_isaaclab_dir, f"{ilci.container_name}"] + args.job_args, check=True)
+        subprocess.run(["ssh", cluster_login, f"cd {cluster_isaaclab_dir} && sbatch {cluster_isaaclab_dir}/docker/cluster/submit_job.sh", cluster_isaaclab_dir, f"{container_interface.container_name}"] + args.job_args, check=True)
     else:
         print(f"[Error] Invalid command provided: {mode}", file=sys.stderr)
         print_help()

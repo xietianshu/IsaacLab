@@ -35,21 +35,3 @@ class IsaacLabContainerInterface(object):
         if result.returncode != 0:
             print(f"[Error] The '{self.image_name}' image does not exist!", file=sys.stderr)
             sys.exit(1)
-
-    def copy_artifacts(self):
-        self.is_container_running()
-        print(f"[INFO] Copying artifacts from the 'isaac-lab-{self.profile}' container...")
-        artifacts = {
-            "logs": "logs",
-            "docs/_build": "docs/_build",
-            "data_storage": "data_storage"
-        }
-        for container_path, host_path in artifacts.items():
-            print(f"\t - /workspace/isaaclab/{container_path} -> {self.base_dir}/artifacts/{host_path}")
-        os.chdir(self.base_dir)
-        for path in artifacts.values():
-            shutil.rmtree(self.base_dir / f"artifacts/{path}", ignore_errors=True)
-        (self.base_dir / "artifacts/docs").mkdir(parents=True, exist_ok=True)
-        for container_path, host_path in artifacts.items():
-            subprocess.run(["docker", "cp", f"isaac-lab-{self.profile}:/workspace/isaaclab/{container_path}", f"./artifacts/{host_path}"], check=True)
-        print("\n[INFO] Finished copying the artifacts from the container.")
