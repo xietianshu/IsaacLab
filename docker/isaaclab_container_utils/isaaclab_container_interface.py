@@ -1,7 +1,13 @@
-import sys
-import subprocess
+# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
-class IsaacLabContainerInterface(object):
+import subprocess
+import sys
+
+
+class IsaacLabContainerInterface:
     def __init__(self, base_dir, profile=None, statefile=None):
         self.base_dir = base_dir
         self.profile = profile or "base"
@@ -24,16 +30,20 @@ class IsaacLabContainerInterface(object):
             self.add_envs += ["--env-file", f".env.{self.profile}"]
 
     def load_dot_vars(self):
-        # Load the dot vars that will be loaded from .env files 
+        # Load the dot vars that will be loaded from .env files
         # by reading them in order and overwriting name conflicts,
         # just how docker compose does
         self.dot_vars = {}
         for i in range(1, len(self.add_envs), 2):
             with open(self.base_dir / self.add_envs[i]) as f:
-                self.dot_vars.update(dict(line.strip().split('=', 1) for line in f if '=' in line))
+                self.dot_vars.update(dict(line.strip().split("=", 1) for line in f if "=" in line))
 
     def is_container_running(self):
-        status = subprocess.run(["docker", "container", "inspect", "-f", "{{.State.Status}}", self.container_name], capture_output=True, text=True).stdout.strip()
+        status = subprocess.run(
+            ["docker", "container", "inspect", "-f", "{{.State.Status}}", self.container_name],
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
         if status != "running":
             print(f"[Error] The '{self.container_name}' container is not running!", file=sys.stderr)
             sys.exit(1)
