@@ -108,7 +108,7 @@ def main():
     elif args.command == "stop":
         container_interface.is_container_running()
         print(f"[INFO] Stopping the launched docker container {container_interface.container_name}...")
-        os.chdir(container_i help argumentnterface.base_dir)
+        os.chdir(container_interface.base_dir)
         subprocess.run(
             ["docker", "compose", "--file", "docker-compose.yaml"]
             + container_interface.add_profiles
