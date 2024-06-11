@@ -25,9 +25,15 @@ def main():
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument("profile", nargs="?", help="Optional container profile specification.")
 
-    subparsers.add_parser("start", help="Build the docker image and create the container in detached mode.", parents=[parent_parser])
-    subparsers.add_parser("enter", help="Begin a new bash process within an existing Isaac Lab container.", parents=[parent_parser])
-    subparsers.add_parser("copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser])
+    subparsers.add_parser(
+        "start", help="Build the docker image and create the container in detached mode.", parents=[parent_parser]
+    )
+    subparsers.add_parser(
+        "enter", help="Begin a new bash process within an existing Isaac Lab container.", parents=[parent_parser]
+    )
+    subparsers.add_parser(
+        "copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser]
+    )
     subparsers.add_parser("stop", help="Stop the docker container and remove it.", parents=[parent_parser])
     subparsers.add_parser("push", help="Push the docker image to the cluster.", parents=[parent_parser])
 
