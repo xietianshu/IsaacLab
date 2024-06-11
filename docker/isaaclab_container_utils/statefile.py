@@ -5,10 +5,10 @@
 
 import yaml
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
-def load_yaml_file(statefile: Path) -> Dict[str, Any]:
+def load_yaml_file(statefile: Path) -> dict[str, Any]:
     """
     Load the contents of a YAML file.
 
@@ -29,7 +29,7 @@ def load_yaml_file(statefile: Path) -> Dict[str, Any]:
         return {}
 
 
-def save_yaml_file(statefile: Path, data: Dict[str, Any]) -> None:
+def save_yaml_file(statefile: Path, data: dict[str, Any]) -> None:
     """
     Save a dictionary to a YAML file.
 

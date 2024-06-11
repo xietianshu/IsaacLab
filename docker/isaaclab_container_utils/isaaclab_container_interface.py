@@ -7,9 +7,10 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 
 from isaaclab_container_utils.statefile import Statefile
+
 
 class IsaacLabContainerInterface:
     """
@@ -68,9 +69,12 @@ class IsaacLabContainerInterface:
         The environment variables are read in order and overwritten if there are name conflicts,
         mimicking the behavior of Docker compose.
         """
-        self.dot_vars: Dict[str, Any] = {}
+        self.dot_vars: dict[str, Any] = {}
         if len(self.add_env_files) % 2 != 0:
-            raise RuntimeError("The parameter self.add_env_files is configured incorrectly. There should be an even number of arguments.")
+            raise RuntimeError(
+                "The parameter self.add_env_files is configured incorrectly. There should be an even number of"
+                " arguments."
+            )
         for i in range(1, len(self.add_env_files), 2):
             with open(self.context_dir / self.add_env_files[i]) as f:
                 self.dot_vars.update(dict(line.strip().split("=", 1) for line in f if "=" in line))
@@ -165,7 +169,7 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def copy(self, output_dir: Optional[Path] = None) -> None:
+    def copy(self, output_dir: Path | None = None) -> None:
         """
         Copy artifacts from the running container to the host machine.
 

@@ -6,10 +6,10 @@
 import os
 import shutil
 import subprocess
-from isaaclab_container_utils.statefile import Statefile
 from pathlib import Path
 
-from typing import Union, List, Dict, Tuple
+from isaaclab_container_utils.statefile import Statefile
+
 
 def install_xauth() -> None:
     """
@@ -27,7 +27,7 @@ def install_xauth() -> None:
 
 # This method of x11 enabling forwarding was inspired by osrf/rocker
 # https://github.com/osrf/rocker
-def configure_x11(statefile: Statefile) -> Dict[str, str]:
+def configure_x11(statefile: Statefile) -> dict[str, str]:
     """
     Configure X11 forwarding by creating and managing a temporary .xauth file.
 
@@ -56,7 +56,7 @@ def configure_x11(statefile: Statefile) -> Dict[str, str]:
     return {"__ISAACLAB_TMP_XAUTH": str(__ISAACLAB_TMP_XAUTH)}
 
 
-def x11_check(statefile: Statefile) -> Union[Tuple[List[str], Dict[str, str]], str]:
+def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
     """
     Check and configure X11 forwarding based on user input and existing state.
 
