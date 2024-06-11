@@ -5,9 +5,15 @@
 
 import subprocess
 import sys
+from isaaclab_container_utils.isaaclab_container_interface import IsaacLabContainerInterface
 
+def install_apptainer() -> None:
+    """
+    Prompt the user to install Apptainer via apt if it is not already installed.
 
-def install_apptainer():
+    If the user agrees, update the package list, add the Apptainer PPA, and install Apptainer.
+    If the user declines, exit the program.
+    """
     app_answer = input(
         "[INFO] Required 'apptainer' package could not be found. Would you like to install it via apt? (y/N)"
     )
@@ -22,23 +28,36 @@ def install_apptainer():
         sys.exit()
 
 
-def check_docker_version_compatible():
+def check_docker_version_compatible() -> None:
+    """
+    Check if the Docker version is compatible with Apptainer.
+
+    If the Docker version is 25.x.x or higher, raise a RuntimeError.
+    Print the Docker and Apptainer versions if they are compatible.
+    """
     docker_version = subprocess.run(["docker", "--version"], capture_output=True, text=True).stdout.split()[2]
     apptainer_version = subprocess.run(["apptainer", "--version"], capture_output=True, text=True).stdout.split()[2]
     if int(docker_version.split(".")[0]) >= 25:
-        print(
-            f"[ERROR]: Docker version {docker_version} is not compatible with Apptainer version {apptainer_version}."
+        raise RuntimeError(
+            f"Docker version {docker_version} is not compatible with Apptainer version {apptainer_version}."
             " Docker version must be 25.x.x or lower. Exiting."
         )
-        sys.exit(1)
-    else:
-        print(
-            f"[INFO]: Building singularity with docker version: {docker_version} and Apptainer version:"
-            f" {apptainer_version}."
-        )
+    print(
+        f"[INFO]: Building singularity with docker version: {docker_version} and Apptainer version:"
+        f" {apptainer_version}."
+    )
 
 
-def check_singularity_image_exists(container_interface):
+def check_singularity_image_exists(container_interface: IsaacLabContainerInterface) -> None:
+    """
+    Check if the Singularity image exists on the remote host.
+
+    Args:
+        container_interface (IsaacLabContainerInterface): An instance of IsaacLabContainerInterface to access configuration variables.
+
+    Raises:
+        RuntimeError: If the Singularity image does not exist on the remote host.
+    """
     CLUSTER_LOGIN = container_interface.dot_vars["CLUSTER_LOGIN"]
     CLUSTER_SIF_PATH = container_interface.dot_vars["CLUSTER_SIF_PATH"]
     result = subprocess.run(
@@ -47,8 +66,6 @@ def check_singularity_image_exists(container_interface):
         text=True,
     )
     if result.returncode != 0:
-        print(
-            f"[Error] The '{container_interface.image_name}' image does not exist on the remote host {CLUSTER_LOGIN}!",
-            file=sys.stderr,
+        raise RuntimeError(
+            f"The image '{container_interface.image_name}' does not exist on the remote host {CLUSTER_LOGIN}!",
         )
-        sys.exit(1)
