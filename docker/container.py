@@ -21,18 +21,20 @@ def main():
     parser = argparse.ArgumentParser(description="Utility for using Docker with Isaac Lab.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("start", help="Build the docker image and create the container in detached mode.")
-    subparsers.add_parser("enter", help="Begin a new bash process within an existing Isaac Lab container.")
-    subparsers.add_parser("copy", help="Copy build and logs artifacts from the container to the host machine.")
-    subparsers.add_parser("stop", help="Stop the docker container and remove it.")
-    subparsers.add_parser("push", help="Push the docker image to the cluster.")
+    # We have to create a separate parent parser for common options to our subparsers
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument("profile", nargs="?", help="Optional container profile specification.")
 
-    job_parser = subparsers.add_parser("job", help="Submit a job to the cluster.")
+    subparsers.add_parser("start", help="Build the docker image and create the container in detached mode.", parents=[parent_parser])
+    subparsers.add_parser("enter", help="Begin a new bash process within an existing Isaac Lab container.", parents=[parent_parser])
+    subparsers.add_parser("copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser])
+    subparsers.add_parser("stop", help="Stop the docker container and remove it.", parents=[parent_parser])
+    subparsers.add_parser("push", help="Push the docker image to the cluster.", parents=[parent_parser])
+
+    job_parser = subparsers.add_parser("job", help="Submit a job to the cluster.", parents=[parent_parser])
     job_parser.add_argument(
         "job_args", nargs=argparse.REMAINDER, help="Optional arguments specific to the executed script."
     )
-
-    parser.add_argument("profile", nargs="?", help="Optional container profile specification.")
 
     args = parser.parse_args()
 
@@ -106,7 +108,7 @@ def main():
     elif args.command == "stop":
         container_interface.is_container_running()
         print(f"[INFO] Stopping the launched docker container {container_interface.container_name}...")
-        os.chdir(container_interface.base_dir)
+        os.chdir(container_i help argumentnterface.base_dir)
         subprocess.run(
             ["docker", "compose", "--file", "docker-compose.yaml"]
             + container_interface.add_profiles
