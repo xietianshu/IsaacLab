@@ -29,16 +29,20 @@ class IsaacLabContainerInterface:
         environ (dict): Dictionary of environment variables for subprocesses.
     """
 
-    def __init__(self, context_dir: Path, statefile: Statefile, profile: str = "base"):
+    def __init__(self, context_dir: Path, profile: str = "base", statefile: None | Statefile = None):
         """
         Initialize the IsaacLabContainerInterface with the given parameters.
 
         Args:
             context_dir (Path): The context directory for Docker operations.
-            statefile (Statefile): An instance of the Statefile class to manage state variables.
+            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile.statefile=self.context_dir/.container.yaml.
             profile (str, optional): The profile name for the container. Defaults to "base".
         """
         self.context_dir = context_dir
+        if statefile is None:
+            self.statefile = Statefile(statefile=context_dir / ".container.yaml")
+        else:
+            self.statefile = statefile
         self.profile = profile
         if self.profile == "isaaclab":
             # Silently correct from isaaclab to base,
@@ -47,7 +51,6 @@ class IsaacLabContainerInterface:
             self.profile = "base"
         self.container_name = f"isaac-lab-{self.profile}"
         self.image_name = f"isaac-lab-{self.profile}:latest"
-        self.statefile = statefile
         self.environ = os.environ
         self.resolve_image_extension()
         self.load_dot_vars()
@@ -197,7 +200,7 @@ class IsaacLabContainerInterface:
                     [
                         "docker",
                         "cp",
-                        f"isaac-lab-{self.profile}:/workspace/isaaclab/{container_path}",
+                        f"isaac-lab-{self.profile}:/workspace/isaaclab/{container_path}/",
                         f"{host_path}",
                     ],
                     check=True,

@@ -12,7 +12,6 @@ from pathlib import Path
 
 from isaaclab_container_utils import apptainer_utils, x11_utils
 from isaaclab_container_utils.isaaclab_container_interface import IsaacLabContainerInterface
-from isaaclab_container_utils.statefile import Statefile
 
 
 def main():
@@ -45,44 +44,39 @@ def main():
     if not shutil.which("docker"):
         raise RuntimeError("Docker is not installed! Please check the 'Docker Guide' for instruction.")
 
-    context_dir = Path(__file__).resolve().parent
-    # Creating statefile
-    statefile = Statefile(statefile=context_dir / ".container.yaml")
-    container_interface = IsaacLabContainerInterface(context_dir=context_dir, profile=args.profile, statefile=statefile)
+    # Creating container interface
+    ci = IsaacLabContainerInterface(context_dir=Path(__file__).resolve().parent, profile=args.profile)
 
-    print(f"[INFO] Using container profile: {container_interface.profile}")
+    print(f"[INFO] Using container profile: {ci.profile}")
     if args.command == "start":
-        print(
-            f"[INFO] Building the docker image and starting the container {container_interface.container_name} in the"
-            " background..."
-        )
-        x11_yaml, x11_envar = x11_utils.x11_check(container_interface.statefile)
-        container_interface.add_yamls += x11_yaml
-        container_interface.environ.update(x11_envar)
-        container_interface.start()
+        print(f"[INFO] Building the docker image and starting the container {ci.container_name} in the background...")
+        x11_yaml, x11_envar = x11_utils.x11_check(ci.statefile)
+        ci.add_yamls += x11_yaml
+        ci.environ.update(x11_envar)
+        ci.start()
     elif args.command == "enter":
-        print(f"[INFO] Entering the existing {container_interface.container_name} container in a bash session...")
-        container_interface.enter()
+        print(f"[INFO] Entering the existing {ci.container_name} container in a bash session...")
+        ci.enter()
     elif args.command == "copy":
-        print(f"[INFO] Copying artifacts from the 'isaac-lab-{container_interface.container_name}' container...")
-        container_interface.copy()
+        print(f"[INFO] Copying artifacts from the 'isaac-lab-{ci.container_name}' container...")
+        ci.copy()
         print("\n[INFO] Finished copying the artifacts from the container.")
     elif args.command == "stop":
-        print(f"[INFO] Stopping the launched docker container {container_interface.container_name}...")
-        container_interface.stop()
-        x11_utils.x11_cleanup(statefile)
+        print(f"[INFO] Stopping the launched docker container {ci.container_name}...")
+        ci.stop()
+        x11_utils.x11_cleanup(ci.statefile)
     elif args.command == "push":
         if not shutil.which("apptainer"):
             apptainer_utils.install_apptainer()
-        if not container_interface.does_image_exist():
-            raise RuntimeError(f"The image '{container_interface.image_name}' does not exist!")
+        if not ci.does_image_exist():
+            raise RuntimeError(f"The image '{ci.image_name}' does not exist!")
         apptainer_utils.check_docker_version_compatible()
-        cluster_login = container_interface.dot_vars["CLUSTER_LOGIN"]
-        cluster_isaaclab_dir = container_interface.dot_vars["CLUSTER_ISAACLAB_DIR"]
-        cluster_sif_path = container_interface.dot_vars["CLUSTER_SIF_PATH"]
-        exports_dir = container_interface.context_dir / "exports"
+        cluster_login = ci.dot_vars["CLUSTER_LOGIN"]
+        cluster_isaaclab_dir = ci.dot_vars["CLUSTER_ISAACLAB_DIR"]
+        cluster_sif_path = ci.dot_vars["CLUSTER_SIF_PATH"]
+        exports_dir = ci.context_dir / "exports"
         exports_dir.mkdir(parents=True, exist_ok=True)
-        for file in exports_dir.glob(f"{container_interface.container_name}*"):
+        for file in exports_dir.glob(f"{ci.container_name}*"):
             file.unlink()
         subprocess.run(
             [
@@ -91,15 +85,15 @@ def main():
                 "build",
                 "--sandbox",
                 "--fakeroot",
-                f"{container_interface.container_name}.sif",
-                f"docker-daemon://{container_interface.image_name}",
+                f"{ci.container_name}.sif",
+                f"docker-daemon://{ci.image_name}",
             ],
             check=True,
             shell=True,
             cwd=exports_dir,
         )
         subprocess.run(
-            ["tar", "-cvf", f"{container_interface.container_name}.tar", f"{container_interface.container_name}.sif"],
+            ["tar", "-cvf", f"{ci.container_name}.tar", f"{ci.container_name}.sif"],
             check=True,
             cwd=exports_dir,
         )
@@ -107,16 +101,16 @@ def main():
         subprocess.run(
             [
                 "scp",
-                f"{container_interface.container_name}.tar",
-                f"{cluster_login}:{cluster_sif_path}/{container_interface.container_name}.tar",
+                f"{ci.container_name}.tar",
+                f"{cluster_login}:{cluster_sif_path}/{ci.container_name}.tar",
             ],
             check=True,
             cwd=exports_dir,
         )
     elif args.command == "job":
-        cluster_login = container_interface.dot_vars["CLUSTER_LOGIN"]
-        cluster_isaaclab_dir = container_interface.dot_vars["CLUSTER_ISAACLAB_DIR"]
-        apptainer_utils.check_singularity_image_exists(container_interface)
+        cluster_login = ci.dot_vars["CLUSTER_LOGIN"]
+        cluster_isaaclab_dir = ci.dot_vars["CLUSTER_ISAACLAB_DIR"]
+        apptainer_utils.check_singularity_image_exists(ci)
         subprocess.run(["ssh", cluster_login, f"mkdir -p {cluster_isaaclab_dir}"], check=True)
         print("[INFO] Syncing Isaac Lab code...")
         subprocess.run(
@@ -126,7 +120,7 @@ def main():
                 "--exclude",
                 "*.git*",
                 "--filter=:- .dockerignore",
-                f"/{container_interface.context_dir}/..",
+                f"/{ci.context_dir}/..",
                 f"{cluster_login}:{cluster_isaaclab_dir}",
             ],
             check=True,
@@ -138,7 +132,7 @@ def main():
                 cluster_login,
                 f"cd {cluster_isaaclab_dir} && sbatch {cluster_isaaclab_dir}/docker/cluster/submit_job.sh",
                 cluster_isaaclab_dir,
-                f"{container_interface.container_name}",
+                f"{ci.container_name}",
             ]
             + args.job_args,
             check=True,
