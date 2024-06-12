@@ -35,12 +35,12 @@ class IsaacLabContainerInterface:
 
         Args:
             context_dir (Path): The context directory for Docker operations.
-            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile.statefile=self.context_dir/.container.yaml.
+            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(statefile=self.context_dir/.container.yaml).
             profile (str, optional): The profile name for the container. Defaults to "base".
         """
         self.context_dir = context_dir
         if statefile is None:
-            self.statefile = Statefile(statefile=context_dir / ".container.yaml")
+            self.statefile = Statefile(statefile=self.context_dir / ".container.yaml")
         else:
             self.statefile = statefile
         self.profile = profile
