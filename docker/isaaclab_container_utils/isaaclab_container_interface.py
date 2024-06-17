@@ -170,7 +170,7 @@ class IsaacLabContainerInterface:
                 env=self.environ,
             )
         else:
-            raise RuntimeError(f"The container '{self.container_name}' is not running")
+            raise RuntimeError(f"Can't stop container '{self.container_name}' as it is not running.")
 
     def copy(self, output_dir: Path | None = None) -> None:
         """
