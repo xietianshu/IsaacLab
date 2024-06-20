@@ -201,12 +201,12 @@ class IsaacLabContainerInterface:
             if not output_dir.is_dir():
                 os.mkdir(output_dir)
             artifacts = {
-                "logs": output_dir.joinpath("logs"),
-                "docs/_build": output_dir.joinpath("docs"),
-                "data_storage": output_dir.joinpath("data_storage"),
+                Path(self.dot_vars['DOCKER_ISAACLAB_PATH']).joinpath("logs") : output_dir.joinpath("logs"),
+                Path(self.dot_vars['DOCKER_ISAACLAB_PATH']).joinpath("docs/_build"): output_dir.joinpath("docs"),
+                Path(self.dot_vars['DOCKER_ISAACLAB_PATH']).joinpath("data_storage"): output_dir.joinpath("data_storage"),
             }
             for container_path, host_path in artifacts.items():
-                print(f"\t - /workspace/isaaclab/{container_path} -> {host_path}")
+                print(f"\t -{container_path} -> {host_path}")
             for path in artifacts.values():
                 shutil.rmtree(path, ignore_errors=True)
             for container_path, host_path in artifacts.items():
@@ -214,7 +214,7 @@ class IsaacLabContainerInterface:
                     [
                         "docker",
                         "cp",
-                        f"isaac-lab-{self.profile}:/workspace/isaaclab/{container_path}/",
+                        f"isaac-lab-{self.profile}:{container_path}/",
                         f"{host_path}",
                     ],
                     check=True,
