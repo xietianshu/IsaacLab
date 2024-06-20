@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 
-def load_yaml_file(statefile: Path) -> dict[str, Any]:
+def load_yaml_file(path: Path) -> dict[str, Any]:
     """
     Load the contents of a YAML file.
 
@@ -21,23 +21,23 @@ def load_yaml_file(statefile: Path) -> dict[str, Any]:
     Returns:
         dict: The contents of the YAML file as a dictionary.
     """
-    if statefile.exists():
-        with open(statefile) as file:
+    if path.exists():
+        with open(path) as file:
             return yaml.safe_load(file) or {}
     else:
-        statefile.touch()
+        path.touch()
         return {}
 
 
-def save_yaml_file(statefile: Path, data: dict[str, Any]) -> None:
+def save_yaml_file(path: Path, data: dict[str, Any]) -> None:
     """
     Save a dictionary to a YAML file.
 
     Args:
-        statefile (Path): The path to the YAML file.
+        path (Path): The path to the YAML file.
         data (dict): The data to be saved to the YAML file.
     """
-    with open(statefile, "w") as file:
+    with open(path, "w") as file:
         yaml.safe_dump(data, file)
 
 
@@ -49,14 +49,14 @@ class Statefile:
         statefile (Path): The path to the YAML file.
     """
 
-    def __init__(self, statefile: Path):
+    def __init__(self, path: Path):
         """
         Initialize the Statefile object with the path to the YAML file.
 
         Args:
-            statefile (Path): The path to the YAML file.
+            path (Path): The path to the YAML file.
         """
-        self.statefile = statefile
+        self.path = path
 
     def set_variable(self, key: str, value: Any) -> None:
         """
@@ -66,9 +66,9 @@ class Statefile:
             key (str): The key of the variable to be set.
             value (any): The value of the variable to be set.
         """
-        data = load_yaml_file(self.statefile)
+        data = load_yaml_file(self.path)
         data[key] = value
-        save_yaml_file(self.statefile, data)
+        save_yaml_file(self.path, data)
 
     def load_variable(self, key: str) -> Any:
         """
@@ -80,7 +80,7 @@ class Statefile:
         Returns:
             any: The value of the variable, or None if the key does not exist.
         """
-        data = load_yaml_file(self.statefile)
+        data = load_yaml_file(self.path)
         return data.get(key)
 
     def delete_variable(self, key: str) -> None:
@@ -90,7 +90,7 @@ class Statefile:
         Args:
             key (str): The key of the variable to be deleted.
         """
-        data = load_yaml_file(self.statefile)
+        data = load_yaml_file(self.path)
         if key in data:
             del data[key]
-        save_yaml_file(self.statefile, data)
+        save_yaml_file(self.path, data)

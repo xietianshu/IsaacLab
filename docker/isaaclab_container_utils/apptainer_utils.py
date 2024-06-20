@@ -42,7 +42,7 @@ def check_docker_version_compatible() -> None:
     if int(docker_version.split(".")[0]) >= 25:
         raise RuntimeError(
             f"Docker version {docker_version} is not compatible with Apptainer version {apptainer_version}."
-            " Docker version must be 25.x.x or lower. Exiting."
+            " Docker version must be 24.x.x or lower. Exiting."
         )
     print(
         f"[INFO]: Building singularity with docker version: {docker_version} and Apptainer version:"
