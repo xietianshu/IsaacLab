@@ -19,10 +19,9 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # We have to create separate parent parsers for common options to our subparsers
-    profile_parser = argparse.ArgumentParser(add_help=False)
-    profile_parser.add_argument("profile", nargs="?", default="base", help="Optional container profile specification.")
-    file_composition_parser = argparse.ArgumentParser(add_help=False)
-    file_composition_parser.add_argument(
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument("profile", nargs="?", default="base", help="Optional container profile specification.")
+    parent_parser.add_argument(
         "--add_yamls",
         nargs="*",
         default=None,
@@ -31,7 +30,7 @@ def main():
             " docker-compose.yaml in the order in which they are provided."
         ),
     )
-    file_composition_parser.add_argument(
+    parent_parser.add_argument(
         "--add_envs",
         nargs="*",
         default=None,
@@ -45,25 +44,31 @@ def main():
     subparsers.add_parser(
         "start",
         help="Build the docker image and create the container in detached mode.",
-        parents=[profile_parser, file_composition_parser],
+        parents=[parent_parser],
     )
     subparsers.add_parser(
-        "enter", help="Begin a new bash process within an existing Isaac Lab container.", parents=[profile_parser]
+        "enter", help="Begin a new bash process within an existing Isaac Lab container.", parents=[parent_parser]
     )
     subparsers.add_parser(
-        "copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[profile_parser]
+        "copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser]
     )
     subparsers.add_parser(
-        "stop", help="Stop the docker container and remove it.", parents=[profile_parser, file_composition_parser]
+        "stop", help="Stop the docker container and remove it.", parents=[parent_parser]
     )
-    subparsers.add_parser("push", help="Push the docker image to the cluster.", parents=[profile_parser])
+    subparsers.add_parser("push", help="Push the docker image to the cluster.", parents=[parent_parser])
     config_parser = subparsers.add_parser(
         "config",
         help="Parse, resolve and render compose file in canonical format.",
-        parents=[profile_parser, file_composition_parser],
+        parents=[parent_parser],
     )
-    config_parser.add_argument("--output_dir", help="Path to the file where the config should be stored. Defaults to 'None' and prints to stdin.")
-    job_parser = subparsers.add_parser("job", help="Submit a job to the cluster.", parents=[profile_parser])
+    config_parser.add_argument(
+        "--output-yaml",
+        help=(
+            "File where the config should be stored. If only a filename is provided it will be created in the current"
+            " directory. Defaults to 'None' and prints to stdin."
+        ),
+    )
+    job_parser = subparsers.add_parser("job", help="Submit a job to the cluster.", parents=[parent_parser])
     job_parser.add_argument(
         "job_args", nargs=argparse.REMAINDER, help="Optional arguments specific to the executed script."
     )
@@ -74,7 +79,9 @@ def main():
         raise RuntimeError("Docker is not installed! Please check the 'Docker Guide' for instruction.")
 
     # Creating container interface
-    ci = IsaacLabContainerInterface(context_dir=Path(__file__).resolve().parent, profile=args.profile, yamls=args.add_yamls, envs=args.add_envs)
+    ci = IsaacLabContainerInterface(
+        context_dir=Path(__file__).resolve().parent, profile=args.profile, yamls=args.add_yamls, envs=args.add_envs
+    )
 
     print(f"[INFO] Using container profile: {ci.profile}")
     if args.command == "start":
@@ -96,11 +103,11 @@ def main():
         x11_utils.x11_cleanup(ci.statefile)
     elif args.command == "config":
         print(f"[INFO] Configuring the passed options into a compose yaml...")
-        if not args.output_dir is None:
-            output = str(Path(args.output_dir).resolve())
+        if not args.output_yaml is None:
+            output = str(Path(args.output_yaml).resolve())
         else:
             output = None
-        ci.config(output_dir=output)
+        ci.config(output_yaml=output)
     elif args.command == "push":
         if not shutil.which("apptainer"):
             apptainer_utils.install_apptainer()
