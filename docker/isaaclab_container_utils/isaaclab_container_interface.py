@@ -29,7 +29,14 @@ class IsaacLabContainerInterface:
         environ (dict): Dictionary of environment variables for subprocesses.
     """
 
-    def __init__(self, context_dir: Path, profile: str = "base", statefile: None | Statefile = None, yamls: List[str] | None = None, envs: List[str] | None = None):
+    def __init__(
+        self,
+        context_dir: Path,
+        profile: str = "base",
+        statefile: None | Statefile = None,
+        yamls: list[str] | None = None,
+        envs: list[str] | None = None,
+    ):
         """
         Initialize the IsaacLabContainerInterface with the given parameters.
 
@@ -64,11 +71,11 @@ class IsaacLabContainerInterface:
         self.add_env_files = ["--env-file", ".env.base"]
         if self.profile != "base":
             self.add_env_files += ["--env-file", f".env.{self.profile}"]
-        
+
         if yamls is not None:
             for yaml in yamls:
                 self.add_yamls += ["--file", yaml]
-        
+
         if envs is not None:
             for env in envs:
                 self.add_env_files += ["--env-file", env]
@@ -169,11 +176,7 @@ class IsaacLabContainerInterface:
         """
         if self.is_container_running():
             subprocess.run(
-                ["docker", "compose"]
-                + self.add_yamls
-                + self.add_profiles
-                + self.add_env_files
-                + ["down"],
+                ["docker", "compose"] + self.add_yamls + self.add_profiles + self.add_env_files + ["down"],
                 check=True,
                 cwd=self.context_dir,
                 env=self.environ,
@@ -195,6 +198,8 @@ class IsaacLabContainerInterface:
             if output_dir is None:
                 output_dir = self.context_dir
             output_dir = output_dir.joinpath("artifacts")
+            if not output_dir.is_dir():
+                os.mkdir(output_dir)
             artifacts = {
                 "logs": output_dir.joinpath("logs"),
                 "docs/_build": output_dir.joinpath("docs"),
@@ -217,7 +222,7 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def config(self, output_dir: Path | None = None) -> None:
+    def config(self, output_yaml: Path | None = None) -> None:
         """
         Generate a docker-compose.yaml from the passed yamls, .envs, and either print to the
         terminal or create a yaml at output_dir
@@ -226,17 +231,13 @@ class IsaacLabContainerInterface:
             output_dir (Path, optional): The directory to make make a config file at. Defaults
             to None, and simply prints to the terminal
         """
-        if not output_dir is None:
-            output = ["--output", output_dir]
+        if not output_yaml is None:
+            output = ["--output", output_yaml]
         else:
             output = []
         subprocess.run(
-                ["docker", "compose"]
-                + self.add_yamls
-                + self.add_profiles
-                + self.add_env_files
-                + ["config"] + output,
-                check=True,
-                cwd=self.context_dir,
-                env=self.environ,
-            )
+            ["docker", "compose"] + self.add_yamls + self.add_profiles + self.add_env_files + ["config"] + output,
+            check=True,
+            cwd=self.context_dir,
+            env=self.environ,
+        )
