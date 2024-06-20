@@ -7,7 +7,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 from isaaclab_container_utils.statefile import Statefile
 
@@ -129,6 +129,7 @@ class IsaacLabContainerInterface:
         """
         Build and start the Docker container using the Docker compose command.
         """
+        print(f"[INFO] Building the docker image and starting the container {self.container_name} in the background...")
         subprocess.run(
             [
                 "docker",
@@ -163,6 +164,7 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
+            print(f"[INFO] Entering the existing {self.container_name} container in a bash session...")
             subprocess.run(["docker", "exec", "--interactive", "--tty", f"{self.container_name}", "bash"])
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
@@ -175,6 +177,7 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
+            print(f"[INFO] Stopping the launched docker container {self.container_name}...")
             subprocess.run(
                 ["docker", "compose"] + self.add_yamls + self.add_profiles + self.add_env_files + ["down"],
                 check=True,
@@ -195,15 +198,18 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
+            print(f"[INFO] Copying artifacts from the 'isaac-lab-{self.container_name}' container...")
             if output_dir is None:
                 output_dir = self.context_dir
             output_dir = output_dir.joinpath("artifacts")
             if not output_dir.is_dir():
                 os.mkdir(output_dir)
             artifacts = {
-                Path(self.dot_vars['DOCKER_ISAACLAB_PATH']).joinpath("logs") : output_dir.joinpath("logs"),
-                Path(self.dot_vars['DOCKER_ISAACLAB_PATH']).joinpath("docs/_build"): output_dir.joinpath("docs"),
-                Path(self.dot_vars['DOCKER_ISAACLAB_PATH']).joinpath("data_storage"): output_dir.joinpath("data_storage"),
+                Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("logs"): output_dir.joinpath("logs"),
+                Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("docs/_build"): output_dir.joinpath("docs"),
+                Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("data_storage"): output_dir.joinpath(
+                    "data_storage"
+                ),
             }
             for container_path, host_path in artifacts.items():
                 print(f"\t -{container_path} -> {host_path}")
@@ -219,6 +225,7 @@ class IsaacLabContainerInterface:
                     ],
                     check=True,
                 )
+            print("\n[INFO] Finished copying the artifacts from the container.")
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
@@ -231,7 +238,8 @@ class IsaacLabContainerInterface:
             output_dir (Path, optional): The directory to make make a config file at. Defaults
             to None, and simply prints to the terminal
         """
-        if not output_yaml is None:
+        print("[INFO] Configuring the passed options into a yaml...")
+        if output_yaml is not None:
             output = ["--output", output_yaml]
         else:
             output = []

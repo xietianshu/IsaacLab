@@ -22,7 +22,7 @@ def main():
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument("profile", nargs="?", default="base", help="Optional container profile specification.")
     parent_parser.add_argument(
-        "--add_yamls",
+        "--add-yamls",
         nargs="*",
         default=None,
         help=(
@@ -31,7 +31,7 @@ def main():
         ),
     )
     parent_parser.add_argument(
-        "--add_envs",
+        "--add-envs",
         nargs="*",
         default=None,
         help=(
@@ -52,9 +52,7 @@ def main():
     subparsers.add_parser(
         "copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser]
     )
-    subparsers.add_parser(
-        "stop", help="Stop the docker container and remove it.", parents=[parent_parser]
-    )
+    subparsers.add_parser("stop", help="Stop the docker container and remove it.", parents=[parent_parser])
     subparsers.add_parser("push", help="Push the docker image to the cluster.", parents=[parent_parser])
     config_parser = subparsers.add_parser(
         "config",
@@ -85,25 +83,19 @@ def main():
 
     print(f"[INFO] Using container profile: {ci.profile}")
     if args.command == "start":
-        print(f"[INFO] Building the docker image and starting the container {ci.container_name} in the background...")
         x11_yaml, x11_envar = x11_utils.x11_check(ci.statefile)
         ci.add_yamls += x11_yaml
         ci.environ.update(x11_envar)
         ci.start()
     elif args.command == "enter":
-        print(f"[INFO] Entering the existing {ci.container_name} container in a bash session...")
         ci.enter()
     elif args.command == "copy":
-        print(f"[INFO] Copying artifacts from the 'isaac-lab-{ci.container_name}' container...")
         ci.copy()
-        print("\n[INFO] Finished copying the artifacts from the container.")
     elif args.command == "stop":
-        print(f"[INFO] Stopping the launched docker container {ci.container_name}...")
         ci.stop()
         x11_utils.x11_cleanup(ci.statefile)
     elif args.command == "config":
-        print(f"[INFO] Configuring the passed options into a compose yaml...")
-        if not args.output_yaml is None:
+        if args.output_yaml is not None:
             output = str(Path(args.output_yaml).resolve())
         else:
             output = None
