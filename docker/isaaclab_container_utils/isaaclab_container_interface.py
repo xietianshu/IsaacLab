@@ -42,14 +42,14 @@ class IsaacLabContainerInterface:
 
         Args:
             context_dir (Path): The context directory for Docker operations.
-            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile.statefile=self.context_dir/.container.yaml.
+            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
             profile (str, optional): The profile name for the container. Defaults to "base".
             yamls (List[str], optional): A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
             envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.context_dir = context_dir
         if statefile is None:
-            self.statefile = Statefile(statefile=context_dir / ".container.yaml")
+            self.statefile = Statefile(path=self.context_dir / ".container.yaml")
         else:
             self.statefile = statefile
         self.profile = profile
@@ -64,7 +64,7 @@ class IsaacLabContainerInterface:
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
-    def resolve_image_extension(self, yamls, envs) -> None:
+    def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None) -> None:
         """
         Resolve the image extension by setting up YAML files, profiles, and environment files for the Docker compose command.
         """
@@ -187,7 +187,7 @@ class IsaacLabContainerInterface:
                 env=self.environ,
             )
         else:
-            raise RuntimeError(f"The container '{self.container_name}' is not running")
+            raise RuntimeError(f"Can't stop container '{self.container_name}' as it is not running.")
 
     def copy(self, output_dir: Path | None = None) -> None:
         """
