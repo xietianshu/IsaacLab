@@ -67,6 +67,10 @@ class IsaacLabContainerInterface:
     def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None) -> None:
         """
         Resolve the image extension by setting up YAML files, profiles, and environment files for the Docker compose command.
+
+        Args:
+            yamls (List[str], optional): A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
+            envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.add_yamls = ["--file", "docker-compose.yaml"]
         self.add_profiles = ["--profile", f"{self.profile}"]
