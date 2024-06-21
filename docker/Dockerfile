@@ -19,6 +19,7 @@ LABEL version="1.0"
 LABEL description="Dockerfile for building and running the Isaac Lab framework inside Isaac Sim container image."
 
 # Arguments
+# We also make them envars for convenience/.bashrc injection
 # Path to Isaac Sim root folder
 ARG ISAACSIM_ROOT_PATH_ARG
 ENV ISAACSIM_ROOT_PATH=${ISAACSIM_ROOT_PATH_ARG}
@@ -47,20 +48,26 @@ RUN --mount=type=cache,target=/var/cache/apt \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the Isaac Lab directory (files to exclude are defined in .dockerignore)
-COPY ../ ${ISAACLAB_PATH}
+COPY ../ ${ISAACLAB_PATH_ARG}
 
 # Set up a symbolic link between the installed Isaac Sim root folder and _isaac_sim in the Isaac Lab directory
-RUN ln -sf ${ISAACSIM_ROOT_PATH} ${ISAACLAB_PATH}/_isaac_sim
+RUN ln -sf ${ISAACSIM_ROOT_PATH_ARG} ${ISAACLAB_PATH_ARG}/_isaac_sim
+
+# Install apt dependencies for extensions that declare them in their extension.toml
+RUN --mount=type=cache,target=/var/cache/apt \
+    ${ISAACLAB_PATH_ARG}/isaaclab.sh -p ${ISAACLAB_PATH_ARG}/tools/install_deps.py apt ${ISAACLAB_PATH_ARG}/source/extensions && \
+    apt -y autoremove && apt clean autoclean && \
+    rm -rf /var/lib/apt/lists/*
 
 # for singularity usage, have to create the directories that will binded
-RUN mkdir -p ${ISAACSIM_ROOT_PATH}/kit/cache && \
-    mkdir -p ${DOCKER_USER_HOME}/.cache/ov && \
-    mkdir -p ${DOCKER_USER_HOME}/.cache/pip && \
-    mkdir -p ${DOCKER_USER_HOME}/.cache/nvidia/GLCache &&  \
-    mkdir -p ${DOCKER_USER_HOME}/.nv/ComputeCache && \
-    mkdir -p ${DOCKER_USER_HOME}/.nvidia-omniverse/logs && \
-    mkdir -p ${DOCKER_USER_HOME}/.local/share/ov/data && \
-    mkdir -p ${DOCKER_USER_HOME}/Documents
+RUN mkdir -p ${ISAACSIM_ROOT_PATH_ARG}/kit/cache && \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/.cache/ov && \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/.cache/pip && \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/.cache/nvidia/GLCache &&  \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/.nv/ComputeCache && \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/.nvidia-omniverse/logs && \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/.local/share/ov/data && \
+    mkdir -p ${DOCKER_USER_HOME_ARG}/Documents
 
 # for singularity usage, create NVIDIA binary placeholders
 RUN touch /bin/nvidia-smi && \
@@ -74,12 +81,11 @@ RUN touch /bin/nvidia-smi && \
 
 # installing Isaac Lab dependencies
 # use pip caching to avoid reinstalling large packages
-RUN --mount=type=cache,target=${DOCKER_USER_HOME}/.cache/pip \
-    ${ISAACLAB_PATH}/isaaclab.sh --install
+RUN --mount=type=cache,target=${DOCKER_USER_HOME_ARG}/.cache/pip \
+    ${ISAACLAB_PATH_ARG}/isaaclab.sh --install
 
 # aliasing isaaclab.sh and python for convenience
-RUN echo "export ISAACLAB_PATH=${ISAACLAB_PATH}" >> ${HOME}/.bashrc && \
-    echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
+RUN echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
     echo "alias python=${ISAACLAB_PATH}/_isaac_sim/python.sh" >> ${HOME}/.bashrc && \
     echo "alias python3=${ISAACLAB_PATH}/_isaac_sim/python.sh" >> ${HOME}/.bashrc && \
     echo "alias pip='${ISAACLAB_PATH}/_isaac_sim/python.sh -m pip'" >> ${HOME}/.bashrc && \
@@ -89,12 +95,14 @@ RUN echo "export ISAACLAB_PATH=${ISAACLAB_PATH}" >> ${HOME}/.bashrc && \
 
 # make working directory as the Isaac Lab directory
 # this is the default directory when the container is run
-WORKDIR ${ISAACLAB_PATH}
+WORKDIR ${ISAACLAB_PATH_ARG}
 
 # Everything past this stage is to install
 # ROS2 Humble
 FROM isaac-lab-base AS ros2
 
+# Re-using ARG from previous stage
+ARG ISAACLAB_PATH_ARG
 # Which ROS2 apt package to install
 ARG ROS2_APT_PACKAGE
 
@@ -114,7 +122,13 @@ RUN --mount=type=cache,target=/var/cache/apt \
     ros-humble-rmw-cyclonedds-cpp \
     ros-humble-rmw-fastrtps-cpp \
     # This includes various dev tools including colcon
-    ros-dev-tools && \
+    ros-dev-tools
+    # Install rosdeps for extensions that declare a ros_ws in
+    # their extension.toml
+
+RUN echo "MAYBE"
+
+RUN ${ISAACLAB_PATH_ARG}/isaaclab.sh -p ${ISAACLAB_PATH_ARG}/tools/install_deps.py rosdep ${ISAACLAB_PATH_ARG}/source/extensions && \
     apt -y autoremove && apt clean autoclean && \
     rm -rf /var/lib/apt/lists/* && \
     # Add sourcing of setup.bash to .bashrc
