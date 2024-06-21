@@ -62,7 +62,7 @@ class IsaacLabContainerInterface:
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
-    def resolve_image_extension(self, yamls, envs) -> None:
+    def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None) -> None:
         """
         Resolve the image extension by setting up YAML files, profiles, and environment files for the Docker compose command.
         """
