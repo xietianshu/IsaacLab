@@ -69,12 +69,12 @@ x-default-isaac-lab-deploy: &default-isaac-lab-deploy
 
 services:
   # This service is the base Isaac Lab image
-  isaac-lab-base:
-    profiles: [ "base" ]
+  isaac-lab:
     env_file: .env.base
     build:
+      target: base
       context: ../
-      dockerfile: docker/Dockerfile.base
+      dockerfile: docker/Dockerfile
       args:
         - ISAACSIM_VERSION_ARG=${ISAACSIM_VERSION}
         - ISAACSIM_ROOT_PATH_ARG=${DOCKER_ISAACSIM_ROOT_PATH}
@@ -82,32 +82,6 @@ services:
         - DOCKER_USER_HOME_ARG=${DOCKER_USER_HOME}
     image: isaac-lab-base
     container_name: isaac-lab-base
-    environment: *default-isaac-lab-environment
-    volumes: *default-isaac-lab-volumes
-    network_mode: host
-    deploy: *default-isaac-lab-deploy
-    # This is the entrypoint for the container
-    entrypoint: bash
-    stdin_open: true
-    tty: true
-
-  # This service adds a ROS2 Humble
-  # installation on top of the base image
-  isaac-lab-ros2:
-    profiles: [ "ros2" ]
-    env_file:
-      - .env.base
-      - .env.ros2
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile.ros2
-      args:
-        # ROS2_APT_PACKAGE will default to NONE. This is to
-        # avoid a warning message when building only the base profile
-        # with the .env.base file
-        - ROS2_APT_PACKAGE=${ROS2_APT_PACKAGE:-NONE}
-    image: isaac-lab-ros2
-    container_name: isaac-lab-ros2
     environment: *default-isaac-lab-environment
     volumes: *default-isaac-lab-volumes
     network_mode: host

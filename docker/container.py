@@ -20,7 +20,7 @@ def main():
 
     # We have to create separate parent parsers for common options to our subparsers
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument("profile", nargs="?", default="base", help="Optional container profile specification.")
+    parent_parser.add_argument("target", nargs="?", default="base", help="Optional container target specification.")
     parent_parser.add_argument(
         "--add-yamls",
         nargs="*",
@@ -78,10 +78,10 @@ def main():
 
     # Creating container interface
     ci = IsaacLabContainerInterface(
-        context_dir=Path(__file__).resolve().parent, profile=args.profile, yamls=args.add_yamls, envs=args.add_envs
+        context_dir=Path(__file__).resolve().parent, target=args.target, yamls=args.add_yamls, envs=args.add_envs
     )
 
-    print(f"[INFO] Using container profile: {ci.profile}")
+    print(f"[INFO] Using container target: {ci.target}")
     if args.command == "start":
         x11_yaml, x11_envar = x11_utils.x11_check(ci.statefile)
         ci.add_yamls += x11_yaml

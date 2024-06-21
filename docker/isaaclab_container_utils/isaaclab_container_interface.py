@@ -18,12 +18,11 @@ class IsaacLabContainerInterface:
 
     Attributes:
         context_dir (Path): The context directory for Docker operations, where the necessary YAML/.env/Dockerfiles files are located.
-        profile (str): The profile name for the container. Defaults to "base".
+        target (str): The targeted stage for the container. Defaults to "base".
         statefile (Statefile): An instance of the Statefile class to manage state variables.
         container_name (str): The name of the container.
         image_name (str): The name of the image.
         add_yamls (list): YAML files to be included in the Docker compose command.
-        add_profiles (list): Profiles to be included in the Docker compose command.
         add_env_files (list): Environment files to be included in the Docker compose command.
         dot_vars (dict): Dictionary of environment variables loaded from .env files.
         environ (dict): Dictionary of environment variables for subprocesses.
@@ -32,7 +31,7 @@ class IsaacLabContainerInterface:
     def __init__(
         self,
         context_dir: Path,
-        profile: str = "base",
+        target: str = "base",
         statefile: None | Statefile = None,
         yamls: list[str] | None = None,
         envs: list[str] | None = None,
@@ -43,8 +42,8 @@ class IsaacLabContainerInterface:
         Args:
             context_dir (Path): The context directory for Docker operations.
             statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
-            profile (str, optional): The profile name for the container. Defaults to "base".
-            yamls (List[str], optional): A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
+            target (str, optional): The targeted stage for the container. Defaults to "base".
+            yamls (List[str], optional): A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.context_dir = context_dir
@@ -52,31 +51,32 @@ class IsaacLabContainerInterface:
             self.statefile = Statefile(path=self.context_dir / ".container.yaml")
         else:
             self.statefile = statefile
-        self.profile = profile
-        if self.profile == "isaaclab":
+        self.target = target
+        if self.target == "isaaclab":
             # Silently correct from isaaclab to base,
             # because isaaclab is a commonly passed arg
-            # but not a real profile
-            self.profile = "base"
-        self.container_name = f"isaac-lab-{self.profile}"
-        self.image_name = f"isaac-lab-{self.profile}:latest"
+            # but not a real target
+            self.target = "base"
+        self.container_name = f"isaac-lab-{self.target}"
+        self.image_name = f"isaac-lab-{self.target}:latest"
         self.environ = os.environ
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
     def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None) -> None:
         """
-        Resolve the image extension by setting up YAML files, profiles, and environment files for the Docker compose command.
+        Resolve the image extension by setting up YAML files and environment files for the Docker compose command.
 
         Args:
-            yamls (List[str], optional): A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
+            yamls (List[str], optional): A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
-        self.add_yamls = ["--file", "docker-compose.yaml"]
-        self.add_profiles = ["--profile", f"{self.profile}"]
+        self.add_yamls = ["--file", "base.yaml"]
         self.add_env_files = ["--env-file", ".env.base"]
-        if self.profile != "base":
-            self.add_env_files += ["--env-file", f".env.{self.profile}"]
+        if self.target != "base":
+            self.add_yamls += ["--file", f"{self.target}.yaml"]
+            self.add_env_files += ["--env-file", f".env.{self.target}"]
+
 
         if yamls is not None:
             for yaml in yamls:
@@ -137,24 +137,8 @@ class IsaacLabContainerInterface:
         """
         print(f"[INFO] Building the docker image and starting the container {self.container_name} in the background...")
         subprocess.run(
-            [
-                "docker",
-                "compose",
-                "--file",
-                "docker-compose.yaml",
-                "--env-file",
-                ".env.base",
-                "build",
-                "isaac-lab-base",
-            ],
-            check=True,
-            cwd=self.context_dir,
-            env=self.environ,
-        )
-        subprocess.run(
             ["docker", "compose"]
             + self.add_yamls
-            + self.add_profiles
             + self.add_env_files
             + ["up", "--detach", "--build", "--remove-orphans"],
             check=True,
@@ -185,7 +169,7 @@ class IsaacLabContainerInterface:
         if self.is_container_running():
             print(f"[INFO] Stopping the launched docker container {self.container_name}...")
             subprocess.run(
-                ["docker", "compose"] + self.add_yamls + self.add_profiles + self.add_env_files + ["down"],
+                ["docker", "compose"] + self.add_yamls + self.add_env_files + ["down"],
                 check=True,
                 cwd=self.context_dir,
                 env=self.environ,
@@ -226,7 +210,7 @@ class IsaacLabContainerInterface:
                     [
                         "docker",
                         "cp",
-                        f"isaac-lab-{self.profile}:{container_path}/",
+                        f"isaac-lab-{self.target}:{container_path}/",
                         f"{host_path}",
                     ],
                     check=True,
@@ -250,7 +234,7 @@ class IsaacLabContainerInterface:
         else:
             output = []
         subprocess.run(
-            ["docker", "compose"] + self.add_yamls + self.add_profiles + self.add_env_files + ["config"] + output,
+            ["docker", "compose"] + self.add_yamls + self.add_env_files + ["config"] + output,
             check=True,
             cwd=self.context_dir,
             env=self.environ,
