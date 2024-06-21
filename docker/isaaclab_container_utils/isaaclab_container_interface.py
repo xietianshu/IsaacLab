@@ -44,6 +44,8 @@ class IsaacLabContainerInterface:
             context_dir (Path): The context directory for Docker operations.
             statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile.statefile=self.context_dir/.container.yaml.
             profile (str, optional): The profile name for the container. Defaults to "base".
+            yamls (List[str], optional): A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
+            envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.context_dir = context_dir
         if statefile is None:
@@ -232,10 +234,10 @@ class IsaacLabContainerInterface:
     def config(self, output_yaml: Path | None = None) -> None:
         """
         Generate a docker-compose.yaml from the passed yamls, .envs, and either print to the
-        terminal or create a yaml at output_dir
+        terminal or create a yaml at output_yaml
 
         Args:
-            output_dir (Path, optional): The directory to make make a config file at. Defaults
+            output_yaml (Path, optional): The absolute path of the yaml file to write the output to, if any. Defaults
             to None, and simply prints to the terminal
         """
         print("[INFO] Configuring the passed options into a yaml...")
