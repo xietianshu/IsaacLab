@@ -60,6 +60,7 @@ class IsaacLabContainerInterface:
         self.container_name = f"isaac-lab-{self.target}"
         self.image_name = f"isaac-lab-{self.target}:latest"
         self.environ = os.environ
+        self.environ.update({'TARGET': self.target})
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
@@ -71,11 +72,14 @@ class IsaacLabContainerInterface:
             yamls (List[str], optional): A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
-        self.add_yamls = ["--file", "base.yaml"]
-        self.add_env_files = ["--env-file", ".env.base"]
-        if self.target != "base":
-            self.add_yamls += ["--file", f"{self.target}.yaml"]
-            self.add_env_files += ["--env-file", f".env.{self.target}"]
+        stage_dep_dict = parse_dockerfile(f"{self.context_dir}/Dockerfile")
+        self.add_yamls = []
+        self.add_env_files = []
+        for stage in stage_dep_dict[self.target]:
+            if os.path.isfile(os.path.join(self.context_dir, f"{stage}.yaml")):
+                self.add_yamls += ["--file", f"{stage}.yaml"]
+            if os.path.isfile(os.path.join(self.context_dir, f".env.{stage}")):
+                self.add_env_files += ["--env-file", f".env.{stage}"]
 
         if yamls is not None:
             for yaml in yamls:
@@ -84,7 +88,7 @@ class IsaacLabContainerInterface:
         if envs is not None:
             for env in envs:
                 self.add_env_files += ["--env-file", env]
-
+        
     def load_dot_vars(self) -> None:
         """
         Load environment variables from .env files into a dictionary.
@@ -238,3 +242,76 @@ class IsaacLabContainerInterface:
             cwd=self.context_dir,
             env=self.environ,
         )
+
+import re
+from collections import defaultdict
+
+def parse_dockerfile(file_name):
+    """
+    Parses a Dockerfile and returns a dictionary with each final stage as a key and a list of dependency chain as the value.
+
+    Args:
+    - file_name (str): The name of the Dockerfile.
+
+    Returns:
+    - Dict[str, List[str]]: A dictionary where each key is a final stage and the value is a list of stages in the order of dependency.
+    """
+    stages = []
+    stage_dependencies = defaultdict(list)
+
+    # Regular expressions to match stages and FROM instructions
+    stage_pattern = re.compile(r'FROM\s+([^\s]+)(?:\s+AS\s+([^\s]+))?', re.IGNORECASE)
+    copy_pattern = re.compile(r'COPY\s+--from=([^\s]+)', re.IGNORECASE)
+
+    # Read the Dockerfile content
+    with open(file_name, 'r') as file:
+        dockerfile_content = file.read()
+
+    # Parse the Dockerfile
+    for line in dockerfile_content.splitlines():
+        stage_match = stage_pattern.match(line)
+        copy_match = copy_pattern.search(line)
+        
+        if stage_match:
+            base_image = stage_match.group(1)
+            stage_name = stage_match.group(2)
+            current_stage = stage_name if stage_name else base_image
+            stages.append(current_stage)
+            
+            # Add dependency if the base image is a stage name
+            if base_image in stages:
+                stage_dependencies[current_stage].append(base_image)
+        
+        if copy_match:
+            stage_dependencies[current_stage].append(copy_match.group(1))
+
+    # Function to resolve dependencies
+    def resolve_dependencies(stage, resolved, seen):
+        seen.add(stage)
+        for dep in stage_dependencies[stage]:
+            if dep not in resolved:
+                if dep in seen:
+                    raise ValueError(f"Circular dependency detected: {dep}")
+                resolve_dependencies(dep, resolved, seen)
+        resolved.append(stage)
+
+    # Resolve dependencies for all stages
+    resolved_stages = []
+    seen = set()
+    for stage in stages:
+        if stage not in resolved_stages:
+            resolve_dependencies(stage, resolved_stages, seen)
+
+    # Organize into a dictionary based on dependencies
+    result = {}
+    for stage in resolved_stages:
+        chain = []
+        to_visit = [stage]
+        while to_visit:
+            current = to_visit.pop(0)
+            if current not in chain:
+                chain.append(current)
+                to_visit = stage_dependencies[current] + to_visit
+        result[stage] = chain[::-1]
+
+    return result

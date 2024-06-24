@@ -20,7 +20,7 @@ def main():
 
     # We have to create separate parent parsers for common options to our subparsers
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument("target", nargs="?", default="base", help="Optional container target specification.")
+    parent_parser.add_argument("target", nargs="?", default="base", help="Optional container target specification. Defaults to 'base'.")
     parent_parser.add_argument(
         "--add-yamls",
         nargs="*",

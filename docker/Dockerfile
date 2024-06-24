@@ -99,7 +99,7 @@ WORKDIR ${ISAACLAB_PATH_ARG}
 
 # Everything past this stage is to install
 # ROS2 Humble
-FROM isaac-lab-base AS ros2
+FROM base AS ros2
 
 # Re-using ARG from previous stage
 ARG ISAACLAB_PATH_ARG
@@ -122,13 +122,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
     ros-humble-rmw-cyclonedds-cpp \
     ros-humble-rmw-fastrtps-cpp \
     # This includes various dev tools including colcon
-    ros-dev-tools
+    ros-dev-tools && \
     # Install rosdeps for extensions that declare a ros_ws in
     # their extension.toml
-
-RUN echo "MAYBE"
-
-RUN ${ISAACLAB_PATH_ARG}/isaaclab.sh -p ${ISAACLAB_PATH_ARG}/tools/install_deps.py rosdep ${ISAACLAB_PATH_ARG}/source/extensions && \
+    ${ISAACLAB_PATH_ARG}/isaaclab.sh -p ${ISAACLAB_PATH_ARG}/tools/install_deps.py rosdep ${ISAACLAB_PATH_ARG}/source/extensions && \
     apt -y autoremove && apt clean autoclean && \
     rm -rf /var/lib/apt/lists/* && \
     # Add sourcing of setup.bash to .bashrc
@@ -137,3 +134,10 @@ RUN ${ISAACLAB_PATH_ARG}/isaaclab.sh -p ${ISAACLAB_PATH_ARG}/tools/install_deps.
 # Copy the RMW specifications for ROS2
 # https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_ros.html#enabling-the-ros-bridge-extension
 COPY docker/.ros/ ${DOCKER_USER_HOME}/.ros/
+
+# Add any customizations you would like to be present when you run `container.py start custom` below
+# If you don't require ros2, you can change the underlying layer to base, ie "FROM base AS custom"
+FROM ros2 AS custom
+
+ARG CUSTOM_MESSAGE_ARG
+RUN echo ${CUSTOM_MESSAGE_ARG}
