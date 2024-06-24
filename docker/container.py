@@ -47,6 +47,11 @@ def main():
         parents=[parent_parser],
     )
     subparsers.add_parser(
+        "build",
+        help="Build the docker image.",
+        parents=[parent_parser],
+    )
+    subparsers.add_parser(
         "enter", help="Begin a new bash process within an existing Isaac Lab container.", parents=[parent_parser]
     )
     subparsers.add_parser(
@@ -87,6 +92,8 @@ def main():
         ci.add_yamls += x11_yaml
         ci.environ.update(x11_envar)
         ci.start()
+    elif args.command == "build":
+        ci.build()
     elif args.command == "enter":
         ci.enter()
     elif args.command == "copy":

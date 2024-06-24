@@ -73,13 +73,17 @@ class IsaacLabContainerInterface:
             envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         stage_dep_dict = parse_dockerfile(f"{self.context_dir}/Dockerfile")
-        self.add_yamls = []
-        self.add_env_files = []
-        for stage in stage_dep_dict[self.target]:
-            if os.path.isfile(os.path.join(self.context_dir, f"{stage}.yaml")):
-                self.add_yamls += ["--file", f"{stage}.yaml"]
-            if os.path.isfile(os.path.join(self.context_dir, f".env.{stage}")):
-                self.add_env_files += ["--env-file", f".env.{stage}"]
+        self.add_yamls = ["--file", "base.yaml"]
+        self.add_env_files = ["--env-file", ".env.base"]
+        # Determine if there is a chain of stage dependencies
+        # from this stage, otherwise it's referencing a different Dockerfile
+        if self.target in stage_dep_dict.keys():
+            for stage in stage_dep_dict[self.target]:
+                if not stage == "base":
+                    if os.path.isfile(os.path.join(self.context_dir, f"{stage}.yaml")):
+                        self.add_yamls += ["--file", f"{stage}.yaml"]
+                    if os.path.isfile(os.path.join(self.context_dir, f".env.{stage}")):
+                        self.add_env_files += ["--env-file", f".env.{stage}"]
 
         if yamls is not None:
             for yaml in yamls:
@@ -144,6 +148,21 @@ class IsaacLabContainerInterface:
             + self.add_yamls
             + self.add_env_files
             + ["up", "--detach", "--build", "--remove-orphans"],
+            check=True,
+            cwd=self.context_dir,
+            env=self.environ,
+        )
+
+    def build(self) -> None:
+        """
+        Build the Docker container using the Docker compose command.
+        """
+        print(f"[INFO] Building the docker image {self.image_name}...")
+        subprocess.run(
+            ["docker", "compose"]
+            + self.add_yamls
+            + self.add_env_files
+            + ["build"],
             check=True,
             cwd=self.context_dir,
             env=self.environ,
