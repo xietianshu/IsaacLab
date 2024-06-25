@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+import re
 import shutil
 import subprocess
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -60,7 +62,7 @@ class IsaacLabContainerInterface:
         self.container_name = f"isaac-lab-{self.target}"
         self.image_name = f"isaac-lab-{self.target}:latest"
         self.environ = os.environ
-        self.environ.update({'TARGET': self.target})
+        self.environ.update({"TARGET": self.target})
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
@@ -72,27 +74,25 @@ class IsaacLabContainerInterface:
             yamls (List[str], optional): A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
-        stage_dep_dict = parse_dockerfile(f"{self.context_dir}/Dockerfile")
-        self.add_yamls = ["--file", "base.yaml"]
-        self.add_env_files = ["--env-file", ".env.base"]
+        stage_dep_dict = self.parse_dockerfile()
+        self.yamls = ["base.yaml"]
+        self.env_files = [".env.base"]
         # Determine if there is a chain of stage dependencies
         # from this stage, otherwise it's referencing a different Dockerfile
         if self.target in stage_dep_dict.keys():
             for stage in stage_dep_dict[self.target]:
-                if not stage == "base":
+                if stage != "base":
                     if os.path.isfile(os.path.join(self.context_dir, f"{stage}.yaml")):
-                        self.add_yamls += ["--file", f"{stage}.yaml"]
+                        self.yamls += [f"{stage}.yaml"]
                     if os.path.isfile(os.path.join(self.context_dir, f".env.{stage}")):
-                        self.add_env_files += ["--env-file", f".env.{stage}"]
+                        self.env_files += [f".env.{stage}"]
 
         if yamls is not None:
-            for yaml in yamls:
-                self.add_yamls += ["--file", yaml]
+            self.yamls += yamls
 
         if envs is not None:
-            for env in envs:
-                self.add_env_files += ["--env-file", env]
-        
+            self.env_files += envs
+
     def load_dot_vars(self) -> None:
         """
         Load environment variables from .env files into a dictionary.
@@ -101,14 +101,32 @@ class IsaacLabContainerInterface:
         mimicking the behavior of Docker compose.
         """
         self.dot_vars: dict[str, Any] = {}
-        if len(self.add_env_files) % 2 != 0:
-            raise RuntimeError(
-                "The parameter self.add_env_files is configured incorrectly. There should be an even number of"
-                " arguments."
-            )
-        for i in range(1, len(self.add_env_files), 2):
-            with open(self.context_dir / self.add_env_files[i]) as f:
+        for i in range(len(self.env_files)):
+            with open(self.context_dir / self.env_files[i]) as f:
                 self.dot_vars.update(dict(line.strip().split("=", 1) for line in f if "=" in line))
+
+    def add_env_files(self) -> [str]:
+        """
+        Put self.env_files into a state suitable for the docker compose CLI, with '--env-file' between
+        every argument
+
+        Returns:
+            [str]: A list of strings, with '--env-file' first and then interpolated between the strings of
+                   self.env_files
+        """
+
+        return [self.env_files[int(i / 2)] if i % 2 == 1 else "--env-file" for i in range(len(self.env_files) * 2)]
+
+    def add_yamls(self) -> [str]:
+        """
+        Put self.yamls into a state suitable for the docker compose CLI, with '--file' between
+        every argument
+
+        Returns:
+            [str]: A list of strings, with '--file' first and then interpolated between the strings of
+                   self.yamls
+        """
+        return [self.yamls[int(i / 2)] if i % 2 == 1 else "--file" for i in range(len(self.yamls) * 2)]
 
     def is_container_running(self) -> bool:
         """
@@ -145,8 +163,8 @@ class IsaacLabContainerInterface:
         print(f"[INFO] Building the docker image and starting the container {self.container_name} in the background...")
         subprocess.run(
             ["docker", "compose"]
-            + self.add_yamls
-            + self.add_env_files
+            + self.add_yamls()
+            + self.add_env_files()
             + ["up", "--detach", "--build", "--remove-orphans"],
             check=True,
             cwd=self.context_dir,
@@ -159,10 +177,7 @@ class IsaacLabContainerInterface:
         """
         print(f"[INFO] Building the docker image {self.image_name}...")
         subprocess.run(
-            ["docker", "compose"]
-            + self.add_yamls
-            + self.add_env_files
-            + ["build"],
+            ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["build"],
             check=True,
             cwd=self.context_dir,
             env=self.environ,
@@ -191,7 +206,7 @@ class IsaacLabContainerInterface:
         if self.is_container_running():
             print(f"[INFO] Stopping the launched docker container {self.container_name}...")
             subprocess.run(
-                ["docker", "compose"] + self.add_yamls + self.add_env_files + ["down"],
+                ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["down"],
                 check=True,
                 cwd=self.context_dir,
                 env=self.environ,
@@ -256,81 +271,68 @@ class IsaacLabContainerInterface:
         else:
             output = []
         subprocess.run(
-            ["docker", "compose"] + self.add_yamls + self.add_env_files + ["config"] + output,
+            ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["config"] + output,
             check=True,
             cwd=self.context_dir,
             env=self.environ,
         )
 
-import re
-from collections import defaultdict
+    def parse_dockerfile(self, file_name: str | None = None):
+        """
+        Parses a Dockerfile and returns a dictionary with each final stage as a key and a list of its dependency chain as the value.
 
-def parse_dockerfile(file_name):
-    """
-    Parses a Dockerfile and returns a dictionary with each final stage as a key and a list of dependency chain as the value.
+        Args:
+        - file_name (str): The name of the Dockerfile.
 
-    Args:
-    - file_name (str): The name of the Dockerfile.
+        Returns:
+        - Dict[str, List[str]]: A dictionary where each key is a final stage and the value is a list of stages in the order of dependency.
+        """
+        stages = []
+        stage_dependencies = defaultdict(list)
 
-    Returns:
-    - Dict[str, List[str]]: A dictionary where each key is a final stage and the value is a list of stages in the order of dependency.
-    """
-    stages = []
-    stage_dependencies = defaultdict(list)
+        # Regular expressions to match stages and COPY/FROM instructions
+        stage_pattern = re.compile(r"FROM\s+([^\s]+)(?:\s+AS\s+([^\s]+))?", re.IGNORECASE)
+        copy_pattern = re.compile(r"COPY\s+--from=([^\s]+)", re.IGNORECASE)
 
-    # Regular expressions to match stages and FROM instructions
-    stage_pattern = re.compile(r'FROM\s+([^\s]+)(?:\s+AS\s+([^\s]+))?', re.IGNORECASE)
-    copy_pattern = re.compile(r'COPY\s+--from=([^\s]+)', re.IGNORECASE)
+        # Read the Dockerfile content
+        if file_name is None:
+            file_name = os.path.join(self.context_dir, "Dockerfile")
+            if not os.path.isfile(file_name):
+                raise FileNotFoundError(
+                    "No Dockerfile was passed for parsing, and a Dockerfile couldn't be found at the passed context"
+                    " root."
+                )
+        with open(file_name) as file:
+            dockerfile_content = file.read()
 
-    # Read the Dockerfile content
-    with open(file_name, 'r') as file:
-        dockerfile_content = file.read()
+        # Parse the Dockerfile
+        for line in dockerfile_content.splitlines():
+            stage_match = stage_pattern.match(line)
+            copy_match = copy_pattern.search(line)
 
-    # Parse the Dockerfile
-    for line in dockerfile_content.splitlines():
-        stage_match = stage_pattern.match(line)
-        copy_match = copy_pattern.search(line)
-        
-        if stage_match:
-            base_image = stage_match.group(1)
-            stage_name = stage_match.group(2)
-            current_stage = stage_name if stage_name else base_image
-            stages.append(current_stage)
-            
-            # Add dependency if the base image is a stage name
-            if base_image in stages:
-                stage_dependencies[current_stage].append(base_image)
-        
-        if copy_match:
-            stage_dependencies[current_stage].append(copy_match.group(1))
+            if stage_match:
+                base_image = stage_match.group(1)
+                stage_name = stage_match.group(2)
+                current_stage = stage_name if stage_name else base_image
+                stages.append(current_stage)
 
-    # Function to resolve dependencies
-    def resolve_dependencies(stage, resolved, seen):
-        seen.add(stage)
-        for dep in stage_dependencies[stage]:
-            if dep not in resolved:
-                if dep in seen:
-                    raise ValueError(f"Circular dependency detected: {dep}")
-                resolve_dependencies(dep, resolved, seen)
-        resolved.append(stage)
+                # Add dependency if the base image is a stage name
+                if base_image in stages:
+                    stage_dependencies[current_stage].append(base_image)
 
-    # Resolve dependencies for all stages
-    resolved_stages = []
-    seen = set()
-    for stage in stages:
-        if stage not in resolved_stages:
-            resolve_dependencies(stage, resolved_stages, seen)
+            if copy_match:
+                stage_dependencies[current_stage].append(copy_match.group(1))
 
-    # Organize into a dictionary based on dependencies
-    result = {}
-    for stage in resolved_stages:
-        chain = []
-        to_visit = [stage]
-        while to_visit:
-            current = to_visit.pop(0)
-            if current not in chain:
-                chain.append(current)
-                to_visit = stage_dependencies[current] + to_visit
-        result[stage] = chain[::-1]
+        # Organize into a dictionary based on dependencies
+        result = {}
+        for stage in stages:
+            chain = []
+            to_visit = [stage]
+            while to_visit:
+                current = to_visit.pop(0)
+                if current not in chain:
+                    chain.append(current)
+                    to_visit = stage_dependencies[current] + to_visit
+            result[stage] = chain[::-1]
 
-    return result
+        return result

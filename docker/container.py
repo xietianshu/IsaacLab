@@ -20,7 +20,9 @@ def main():
 
     # We have to create separate parent parsers for common options to our subparsers
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument("target", nargs="?", default="base", help="Optional container target specification. Defaults to 'base'.")
+    parent_parser.add_argument(
+        "target", nargs="?", default="base", help="Optional container target specification. Defaults to 'base'."
+    )
     parent_parser.add_argument(
         "--add-yamls",
         nargs="*",
@@ -89,7 +91,7 @@ def main():
     print(f"[INFO] Using container target: {ci.target}")
     if args.command == "start":
         x11_yaml, x11_envar = x11_utils.x11_check(ci.statefile)
-        ci.add_yamls += x11_yaml
+        ci.yamls += x11_yaml
         ci.environ.update(x11_envar)
         ci.start()
     elif args.command == "build":

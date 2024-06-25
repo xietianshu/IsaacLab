@@ -97,7 +97,7 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
         x11_envar = configure_x11(statefile)
         # If X11 forwarding is enabled, return the proper args to
         # compose the x11.yaml file. Else, return an empty string.
-        return (["--file", "x11.yaml"], x11_envar)
+        return (["x11.yaml"], x11_envar)
 
     return ""
 
