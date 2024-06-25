@@ -9,7 +9,6 @@
 # Base image
 ARG ISAACSIM_VERSION_ARG
 FROM nvcr.io/nvidia/isaac-sim:${ISAACSIM_VERSION_ARG} AS base
-ENV ISAACSIM_VERSION=${ISAACSIM_VERSION_ARG}
 
 # Set default RUN shell to bash
 SHELL ["/bin/bash", "-c"]
@@ -22,13 +21,10 @@ LABEL description="Dockerfile for building and running the Isaac Lab framework i
 # We also make them envars for convenience/.bashrc injection
 # Path to Isaac Sim root folder
 ARG ISAACSIM_ROOT_PATH_ARG
-ENV ISAACSIM_ROOT_PATH=${ISAACSIM_ROOT_PATH_ARG}
 # Path to the Isaac Lab directory
 ARG ISAACLAB_PATH_ARG
-ENV ISAACLAB_PATH=${ISAACLAB_PATH_ARG}
 # Home dir of docker user, typically '/root'
 ARG DOCKER_USER_HOME_ARG
-ENV DOCKER_USER_HOME=${DOCKER_USER_HOME_ARG}
 
 # Set environment variables
 ENV LANG=C.UTF-8
@@ -101,10 +97,12 @@ WORKDIR ${ISAACLAB_PATH_ARG}
 # ROS2 Humble
 FROM base AS ros2
 
-# Re-using ARG from previous stage
+# Re-using ARGs from previous stage
 ARG ISAACLAB_PATH_ARG
+ARG DOCKER_USER_HOME_ARG
 # Which ROS2 apt package to install
-ARG ROS2_APT_PACKAGE
+ARG ROS2_APT_PACKAGE_ARG
+
 
 # ROS2 Humble Apt installations
 RUN --mount=type=cache,target=/var/cache/apt \
@@ -116,7 +114,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
     curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo jammy) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
     apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-${ROS2_APT_PACKAGE} \
+    ros-humble-${ROS2_APT_PACKAGE_ARG} \
     ros-humble-vision-msgs \
     # Install both FastRTPS and CycloneDDS
     ros-humble-rmw-cyclonedds-cpp \
@@ -133,7 +131,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # Copy the RMW specifications for ROS2
 # https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_ros.html#enabling-the-ros-bridge-extension
-COPY docker/.ros/ ${DOCKER_USER_HOME}/.ros/
+COPY docker/.ros/ ${DOCKER_USER_HOME_ARG}/.ros/
 
 # Add any customizations you would like to be present when you run `container.py start custom` below
 # If you don't require ros2, you can change the underlying layer to base, ie "FROM base AS custom"
