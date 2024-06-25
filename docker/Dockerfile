@@ -137,5 +137,7 @@ COPY docker/.ros/ ${DOCKER_USER_HOME_ARG}/.ros/
 # If you don't require ros2, you can change the underlying layer to base, ie "FROM base AS custom"
 FROM ros2 AS custom
 
+# Please make sure to re-declare any args which you require
+# from previous stages, ie ARG ISAACLAB_PATH_ARG if you need ISAACLAB_PATH_ARG from base
 ARG CUSTOM_MESSAGE_ARG
 RUN echo ${CUSTOM_MESSAGE_ARG}
