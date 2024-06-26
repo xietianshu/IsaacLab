@@ -310,6 +310,11 @@ class LocomotionVelocityRoughEnvCfg(ManagerBasedRLEnvCfg):
         if self.scene.contact_forces is not None:
             self.scene.contact_forces.update_period = self.sim.dt
 
+        # adds tracking of the robot
+        self.viewer.eye = (2.5, 0.5, 0.3)
+        self.viewer.origin_type = "asset_root"
+        self.viewer.asset_name = "robot"
+
         # check if terrain levels curriculum is enabled - if so, enable curriculum for terrain generator
         # this generates terrains with increasing difficulty and is useful for training
         if getattr(self.curriculum, "terrain_levels", None) is not None:
