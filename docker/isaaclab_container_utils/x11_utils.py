@@ -68,7 +68,7 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
 
     Returns:
         list or str: A list containing the x11.yaml file configuration option if X11 forwarding is enabled,
-                     otherwise an empty string.
+                     otherwise None
     """
     __ISAACLAB_X11_FORWARDING_ENABLED = statefile.load_variable("__ISAACLAB_X11_FORWARDING_ENABLED")
     if __ISAACLAB_X11_FORWARDING_ENABLED is None:
@@ -99,7 +99,7 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
         # compose the x11.yaml file. Else, return an empty string.
         return (["x11.yaml"], x11_envar)
 
-    return ""
+    return None
 
 
 def x11_cleanup(statefile: Statefile) -> None:

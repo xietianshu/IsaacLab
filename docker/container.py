@@ -90,9 +90,12 @@ def main():
 
     print(f"[INFO] Using container target: {ci.target}")
     if args.command == "start":
-        x11_yaml, x11_envar = x11_utils.x11_check(ci.statefile)
-        ci.yamls += x11_yaml
-        ci.environ.update(x11_envar)
+        print(f"[INFO] Building the docker image and starting the container {ci.container_name} in the background...")
+        x11_outputs = x11_utils.x11_check(ci.statefile)
+        if x11_outputs is not None:
+            (x11_yaml, x11_envar) = x11_outputs
+            ci.yamls += x11_yaml
+            ci.environ.update(x11_envar)
         ci.start()
     elif args.command == "build":
         ci.build()
