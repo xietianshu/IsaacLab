@@ -50,9 +50,11 @@ def main():
     print(f"[INFO] Using container profile: {ci.profile}")
     if args.command == "start":
         print(f"[INFO] Building the docker image and starting the container {ci.container_name} in the background...")
-        x11_yaml, x11_envar = x11_utils.x11_check(ci.statefile)
-        ci.add_yamls += x11_yaml
-        ci.environ.update(x11_envar)
+        x11_outputs = x11_utils.x11_check(ci.statefile)
+        if x11_outputs is not None:
+            (x11_yaml, x11_envar) = x11_outputs
+            ci.add_yamls += x11_yaml
+            ci.environ.update(x11_envar)
         ci.start()
     elif args.command == "enter":
         print(f"[INFO] Entering the existing {ci.container_name} container in a bash session...")
