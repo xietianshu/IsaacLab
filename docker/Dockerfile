@@ -81,12 +81,12 @@ RUN --mount=type=cache,target=${DOCKER_USER_HOME_ARG}/.cache/pip \
     ${ISAACLAB_PATH_ARG}/isaaclab.sh --install
 
 # aliasing isaaclab.sh and python for convenience
-RUN echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
-    echo "alias python=${ISAACLAB_PATH}/_isaac_sim/python.sh" >> ${HOME}/.bashrc && \
-    echo "alias python3=${ISAACLAB_PATH}/_isaac_sim/python.sh" >> ${HOME}/.bashrc && \
-    echo "alias pip='${ISAACLAB_PATH}/_isaac_sim/python.sh -m pip'" >> ${HOME}/.bashrc && \
-    echo "alias pip3='${ISAACLAB_PATH}/_isaac_sim/python.sh -m pip'" >> ${HOME}/.bashrc && \
-    echo "alias tensorboard='${ISAACLAB_PATH}/_isaac_sim/python.sh ${ISAACLAB_PATH}/_isaac_sim/tensorboard'" >> ${HOME}/.bashrc && \
+RUN echo "alias isaaclab=${ISAACLAB_PATH_ARG}/isaaclab.sh" >> ${HOME}/.bashrc && \
+    echo "alias python=${ISAACLAB_PATH_ARG}/_isaac_sim/python.sh" >> ${HOME}/.bashrc && \
+    echo "alias python3=${ISAACLAB_PATH_ARG}/_isaac_sim/python.sh" >> ${HOME}/.bashrc && \
+    echo "alias pip='${ISAACLAB_PATH_ARG}/_isaac_sim/python.sh -m pip'" >> ${HOME}/.bashrc && \
+    echo "alias pip3='${ISAACLAB_PATH_ARG}/_isaac_sim/python.sh -m pip'" >> ${HOME}/.bashrc && \
+    echo "alias tensorboard='${ISAACLAB_PATH_ARG}/_isaac_sim/python.sh ${ISAACLAB_PATH_ARG}/_isaac_sim/tensorboard'" >> ${HOME}/.bashrc && \
     echo "export TZ=$(date +%Z)" >> ${HOME}/.bashrc
 
 # make working directory as the Isaac Lab directory
