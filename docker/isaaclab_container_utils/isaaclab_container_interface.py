@@ -158,7 +158,7 @@ class IsaacLabContainerInterface:
 
     def start(self) -> None:
         """
-        Build and start the Docker container using the Docker compose command.
+        Build and start the Docker container using the Docker compose 'up' command.
         """
         print(f"[INFO] Building the docker image and starting the container {self.container_name} in the background...")
         subprocess.run(
@@ -173,7 +173,7 @@ class IsaacLabContainerInterface:
 
     def build(self) -> None:
         """
-        Build the Docker container using the Docker compose command.
+        Build the Docker container using the Docker compose 'build' command.
         """
         print(f"[INFO] Building the docker image {self.image_name}...")
         subprocess.run(
