@@ -265,6 +265,9 @@ class ManagerBasedRLEnv(ManagerBasedEnv, gym.Env):
 
     def close(self):
         if not self._is_closed:
+            # stop the simulation
+            if not self.sim.is_stopped():
+                self.sim.stop()
             # destructor is order-sensitive
             del self.command_manager
             del self.reward_manager

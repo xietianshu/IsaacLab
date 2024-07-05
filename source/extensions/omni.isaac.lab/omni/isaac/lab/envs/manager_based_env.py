@@ -318,7 +318,11 @@ class ManagerBasedEnv:
     def close(self):
         """Cleanup for the environment."""
         if not self._is_closed:
+            # stop the simulation
+            if not self.sim.is_stopped():
+                self.sim.stop()
             # destructor is order-sensitive
+            # note: scene is destroyed last to remove all references of it from the managers
             del self.viewport_camera_controller
             del self.action_manager
             del self.observation_manager

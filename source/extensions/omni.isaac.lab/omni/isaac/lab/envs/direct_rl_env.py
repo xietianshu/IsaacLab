@@ -429,6 +429,9 @@ class DirectRLEnv(gym.Env):
     def close(self):
         """Cleanup for the environment."""
         if not self._is_closed:
+            # stop the simulation
+            if not self.sim.is_stopped():
+                self.sim.stop()
             # close entities related to the environment
             # note: this is order-sensitive to avoid any dangling references
             if self.cfg.events:
