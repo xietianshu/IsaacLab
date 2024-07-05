@@ -588,66 +588,18 @@ class SimulationContext(_SimulationContext):
             This callback is used only when running the simulation in a standalone python script. In an extension,
             it is expected that the user handles the extension shutdown.
         """
-        # check if the simulation is stopped
-        if event.type == int(omni.timeline.TimelineEventType.STOP):
-            # keep running the simulator when configured to not shutdown the app
-            if self._has_gui and sys.exc_info()[0] is None:
-                self.app.print_and_log(
-                    "Simulation is stopped. The app will keep running with physics disabled."
-                    " Press Ctrl+C or close the window to exit the app."
-                )
-                while self.app.is_running():
-                    self.render()
-
-        # Note: For the following code:
-        #   The method is an exact copy of the implementation in the `omni.isaac.kit.SimulationApp` class.
-        #   We need to remove this method once the SimulationApp class becomes a singleton.
-
-        # make sure that any replicator workflows finish rendering/writing
-        try:
-            import omni.replicator.core as rep
-
-            rep_status = rep.orchestrator.get_status()
-            if rep_status not in [rep.orchestrator.Status.STOPPED, rep.orchestrator.Status.STOPPING]:
-                rep.orchestrator.stop()
-            if rep_status != rep.orchestrator.Status.STOPPED:
-                rep.orchestrator.wait_until_complete()
-
-            # Disable capture on play to avoid replicator engaging on any new timeline events
-            rep.orchestrator.set_capture_on_play(False)
-        except Exception:
-            pass
-
-        # clear the instance and all callbacks
-        # note: clearing callbacks is important to prevent memory leaks
-        self.clear_all_callbacks()
-
-        # workaround for exit issues, clean the stage first:
-        if omni.usd.get_context().can_close_stage():
-            omni.usd.get_context().close_stage()
-
-        # print logging information
-        self.app.print_and_log("Simulation is stopped. Shutting down the app...")
-
-        # Cleanup any running tracy instances so data is not lost
-        try:
-            profiler_tracy = carb.profiler.acquire_profiler_interface(plugin_name="carb.profiler-tracy.plugin")
-            if profiler_tracy:
-                profiler_tracy.set_capture_mask(0)
-                profiler_tracy.end(0)
-                profiler_tracy.shutdown()
-        except RuntimeError:
-            # Tracy plugin was not loaded, so profiler never started - skip checks.
-            pass
-
-        # Disable logging before shutdown to keep the log clean
-        # Warnings at this point don't matter as the python process is about to be terminated
-        logging = carb.logging.acquire_logging()
-        logging.set_level_threshold(carb.logging.LEVEL_ERROR)
-
-        # App shutdown is disabled to prevent crashes on shutdown. Terminating carb is faster
-        # self._app.shutdown()
-        self._framework.unload_all_plugins()
+        # keep running the simulator when configured to not shutdown the app
+        if self._has_gui and sys.exc_info()[0] is None:
+            self.app.print_and_log(
+                "Simulation is stopped. The app will keep running with physics disabled."
+                " Press Ctrl+C or close the window to exit the app."
+            )
+            while self.app.is_running():
+                self.render()
+        else:
+            carb.log_info(
+                "Simulation is stopped causing the physics handles to go invalid. The app needs to be shutdown."
+            )
 
 
 @contextmanager
@@ -739,10 +691,8 @@ def build_simulation_context(
         carb.log_error(traceback.format_exc())
         raise
     finally:
-        if not sim.has_gui():
-            # Stop simulation only if we aren't rendering otherwise the app will hang indefinitely
-            sim.stop()
-
+        # Stop the simulation
+        sim.stop()
         # Clear the stage
         sim.clear_all_callbacks()
         sim.clear_instance()

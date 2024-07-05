@@ -42,8 +42,6 @@ class TestDifferentialIKController(unittest.TestCase):
         # Load kit helper
         sim_cfg = sim_utils.SimulationCfg(dt=0.01)
         self.sim = sim_utils.SimulationContext(sim_cfg)
-        # TODO: Remove this once we have a better way to handle this.
-        self.sim._app_control_on_stop_handle = None
 
         # Create a ground plane
         cfg = sim_utils.GroundPlaneCfg()

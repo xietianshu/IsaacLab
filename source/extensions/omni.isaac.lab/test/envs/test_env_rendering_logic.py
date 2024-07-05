@@ -18,6 +18,7 @@ import torch
 import unittest
 
 import omni.usd
+import carb
 
 from omni.isaac.lab.envs import (
     DirectRLEnv,
@@ -108,17 +109,14 @@ def create_direct_rl_env(render_interval: int):
 class TestEnvRenderingLogic(unittest.TestCase):
     """Test the rendering logic of the different environment workflows."""
 
-    def _physics_callback(self, dt):
-        # called at every physics step
-        self.physics_time += dt
-        self.num_physics_steps += 1
-
-    def _render_callback(self, event):
-        # called at every render step
-        self.render_time += event.payload["dt"]
-        self.num_render_steps += 1
-
     def test_env_rendering_logic(self):
+        """Test the rendering logic of the different environment workflows.
+
+        We check that the render interval is correctly applied to the environment. We do this by adding
+        physics and render callbacks to the environment and checking that the correct number of physics
+        and rendering steps are completed. We also check that the correct amount of time has passed for
+        both physics and rendering.
+        """
         for env_type in ["manager_based_env", "manager_based_rl_env", "direct_rl_env"]:
             for render_interval in [1, 2, 4, 8, 10]:
                 with self.subTest(env_type=env_type, render_interval=render_interval):
@@ -144,11 +142,6 @@ class TestEnvRenderingLogic(unittest.TestCase):
                     # note: this is only done for the unit testing to "fake" camera rendering.
                     #   normally this is set to True when cameras are created.
                     env.sim.set_setting("/isaaclab/render/rtx_sensors", True)
-
-                    # disable the app from shutting down when the environment is closed
-                    # FIXME: Why is this needed in this test but not in the other tests?
-                    #   Without it, the test will exit after the environment is closed
-                    env.sim._app_control_on_stop_handle = None  # type: ignore
 
                     # check that we are in partial rendering mode for the environment
                     # this is enabled due to app launcher setting "enable_cameras=True"
@@ -190,6 +183,20 @@ class TestEnvRenderingLogic(unittest.TestCase):
 
                     # close the environment
                     env.close()
+
+    """
+    Helper functions.
+    """
+
+    def _physics_callback(self, dt: float):
+        # called at every physics step
+        self.physics_time += dt
+        self.num_physics_steps += 1
+
+    def _render_callback(self, event: carb.events.IEvent):
+        # called at every render step
+        self.render_time += event.payload["dt"]
+        self.num_render_steps += 1
 
 
 if __name__ == "__main__":
