@@ -10,7 +10,7 @@ import sys
 import torch
 import traceback
 import weakref
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -660,7 +660,7 @@ def build_simulation_context(
     add_ground_plane: bool = False,
     add_lighting: bool = False,
     auto_add_lighting: bool = False,
-) -> Iterator[SimulationContext]:
+) -> Generator[SimulationContext]:
     """Context manager to build a simulation context with the provided settings.
 
     This function facilitates the creation of a simulation context and provides flexibility in configuring various
