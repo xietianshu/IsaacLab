@@ -40,7 +40,7 @@ class IsaacLabContainerInterface:
         """
         self.context_dir = context_dir
         if statefile is None:
-            self.statefile = Statefile(path=self.context_dir / ".container.yaml")
+            self.statefile = Statefile(path=self.context_dir / ".container.cfg")
         else:
             self.statefile = statefile
         self.profile = profile
@@ -95,6 +95,7 @@ class IsaacLabContainerInterface:
             ["docker", "container", "inspect", "-f", "{{.State.Status}}", self.container_name],
             capture_output=True,
             text=True,
+            check=True,
         ).stdout.strip()
         return status == "running"
 

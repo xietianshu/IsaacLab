@@ -43,6 +43,7 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     """
     if not shutil.which("xauth"):
         install_xauth()
+    statefile.namespace = "X11"
     __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
     if __ISAACLAB_TMP_XAUTH is None or not Path(__ISAACLAB_TMP_XAUTH).exists():
         __ISAACLAB_TMP_XAUTH = Path(
@@ -70,6 +71,7 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
         list or str: A list containing the x11.yaml file configuration option if X11 forwarding is enabled,
                      otherwise None
     """
+    statefile.namespace = "X11"
     __ISAACLAB_X11_FORWARDING_ENABLED = statefile.load_variable("__ISAACLAB_X11_FORWARDING_ENABLED")
     if __ISAACLAB_X11_FORWARDING_ENABLED is None:
         print("[INFO] X11 forwarding from the Isaac Lab container is off by default.")
@@ -111,6 +113,7 @@ def x11_cleanup(statefile: Statefile) -> None:
     Args:
         statefile (Statefile): An instance of the Statefile class to manage state variables.
     """
+    statefile.namespace = "X11"
     __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
     if __ISAACLAB_TMP_XAUTH is not None and Path(__ISAACLAB_TMP_XAUTH).exists():
         print(f"[INFO] Removing temporary Isaac Lab .xauth file {__ISAACLAB_TMP_XAUTH}.")
