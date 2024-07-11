@@ -22,9 +22,7 @@ def load_cfg_file(path: Path) -> ConfigParser:
         dict: The contents of the config file as a dictionary.
     """
     cfg = ConfigParser()
-    if path.exists():
-        with open(path, "w+") as file:
-            cfg.read_file(file)
+    cfg.read(path)
     return cfg
 
 
