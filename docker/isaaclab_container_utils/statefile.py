@@ -56,7 +56,6 @@ class Statefile:
             namespace (str): Namespace a section of the cfg.
             Defaults to None, and all member functions will have
             to specify section or else set Statefile.namespace directly.
-            .
         """
         self.path = path
         self.namespace = namespace
