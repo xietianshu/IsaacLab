@@ -8,6 +8,7 @@ from configparser import ConfigParser
 from pathlib import Path
 from typing import Any
 
+
 def load_cfg_file(path: Path) -> ConfigParser:
     """
     Load the contents of a config file.
@@ -52,7 +53,7 @@ class Statefile:
 
         Args:
             path (Path): The path to the cfg file.
-            namespace (str): Namespace a section of the cfg. 
+            namespace (str): Namespace a section of the cfg.
             Defaults to None, and all member functions will have
             to specify section or else set Statefile.namespace directly.
             .
@@ -74,7 +75,7 @@ class Statefile:
             if self.namespace is None:
                 raise configparser.Error("No section specified")
             section = self.namespace
-        if not section in cfg.sections():
+        if section not in cfg.sections():
             cfg.add_section(section)
         cfg.set(section, key, value)
         save_cfg_file(self.path, cfg)
@@ -111,7 +112,7 @@ class Statefile:
             if self.namespace is None:
                 raise configparser.Error("No section specified")
             section = self.namespace
-        if not section in cfg.sections():
+        if section not in cfg.sections():
             raise configparser.NoSectionError(f"Section {section} does not exist in {self.path}")
         if cfg.has_option(section, key):
             cfg.remove_option(section, key)
