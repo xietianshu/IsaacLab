@@ -56,6 +56,7 @@ check_image_exists() {
     image_name="$1"
     if ! docker image inspect $image_name &> /dev/null; then
         echo "[Error] The '$image_name' image does not exist!" >&2;
+        echo "[Error] You might be able to build it with /IsaacLab/docker/container.py." >&2;
         exit 1
     fi
 }
