@@ -175,7 +175,7 @@ class IsaacLabContainerInterface:
         Copy artifacts from the running container to the host machine.
 
         Args:
-            output_dir : The directory to copy the artifacts to. Defaults to self.context_dir.
+            output_dir: The directory to copy the artifacts to. Defaults to self.context_dir.
 
         Raises:
             RuntimeError: If the container is not running.
@@ -184,6 +184,8 @@ class IsaacLabContainerInterface:
             if output_dir is None:
                 output_dir = self.context_dir
             output_dir = output_dir.joinpath("artifacts")
+            if not output_dir.exists():
+                output_dir.mkdir()
             artifacts = {
                 "logs": output_dir.joinpath("logs"),
                 "docs/_build": output_dir.joinpath("docs"),
