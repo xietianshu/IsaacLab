@@ -119,7 +119,7 @@ class Statefile:
 
     def load_cfg(self):
         """
-        Calls load_cfg_file() to populate self.loaded_cfg with the 
+        Calls load_cfg_file() to populate self.loaded_cfg with the
         data stored at self.path
         """
         self.loaded_cfg = load_cfg_file(self.path)

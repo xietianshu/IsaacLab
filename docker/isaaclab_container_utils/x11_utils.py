@@ -127,12 +127,10 @@ def create_x11_tmpfile(tmp_xauth: Path | None = None) -> Path:
     """
     if tmp_xauth is None:
         # Create .tmp file with .xauth suffix
-        tmp_xauth = Path(
-            subprocess.run(["mktemp", "--suffix=.xauth"], capture_output=True, text=True).stdout.strip()
-        )
+        tmp_xauth = Path(subprocess.run(["mktemp", "--suffix=.xauth"], capture_output=True, text=True).stdout.strip())
     else:
         Path(tmp_xauth).touch()
-    # Derive current MIT-MAGIC-COOKIE and make it universally addressible
+    # Derive current MIT-MAGIC-COOKIE and make it universally addressable
     xauth_cookie = subprocess.run(
         ["xauth", "nlist", os.environ["DISPLAY"]], capture_output=True, text=True
     ).stdout.replace("ffff", "")
@@ -140,15 +138,16 @@ def create_x11_tmpfile(tmp_xauth: Path | None = None) -> Path:
     subprocess.run(["xauth", "-f", tmp_xauth, "nmerge", "-"], input=xauth_cookie, text=True)
     return tmp_xauth
 
+
 def x11_refresh(statefile: Statefile):
     """
     If x11 is enabled, generates a new .xauth file with the current MIT-MAGIC-COOKIE-1,
     using the same filename so that the bind-mount and
-    XAUTHORITY var from build-time still work. DISPLAY will also 
+    XAUTHORITY var from build-time still work. DISPLAY will also
     need to be updated in the container environment command.
 
     Args:
-        statefile: An instance of the Statefile class to manage state variables.    
+        statefile: An instance of the Statefile class to manage state variables.
     """
 
     statefile.namespace = "X11"
