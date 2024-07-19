@@ -15,18 +15,6 @@ from isaaclab_container_utils.statefile import Statefile
 class IsaacLabContainerInterface:
     """
     Interface for managing Isaac Lab containers.
-
-    Attributes:
-        context_dir (Path): The context directory for Docker operations, where the necessary YAML/.env/Dockerfiles files are located.
-        profile (str): The profile name for the container. Defaults to "base".
-        statefile (Statefile): An instance of the Statefile class to manage state variables.
-        container_name (str): The name of the container.
-        image_name (str): The name of the image.
-        add_yamls (list): YAML files to be included in the Docker compose command.
-        add_profiles (list): Profiles to be included in the Docker compose command.
-        add_env_files (list): Environment files to be included in the Docker compose command.
-        dot_vars (dict): Dictionary of environment variables loaded from .env files.
-        environ (dict): Dictionary of environment variables for subprocesses.
     """
 
     def __init__(self, context_dir: Path, profile: str = "base", statefile: None | Statefile = None):
@@ -34,9 +22,9 @@ class IsaacLabContainerInterface:
         Initialize the IsaacLabContainerInterface with the given parameters.
 
         Args:
-            context_dir (Path): The context directory for Docker operations.
-            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
-            profile (str, optional): The profile name for the container. Defaults to "base".
+            context_dir : The context directory for Docker operations.
+            statefile : An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
+            profile : The profile name for the container. Defaults to "base".
         """
         self.context_dir = context_dir
         if statefile is None:
@@ -55,7 +43,7 @@ class IsaacLabContainerInterface:
         self.resolve_image_extension()
         self.load_dot_vars()
 
-    def resolve_image_extension(self) -> None:
+    def resolve_image_extension(self):
         """
         Resolve the image extension by setting up YAML files, profiles, and environment files for the Docker compose command.
         """
@@ -65,7 +53,7 @@ class IsaacLabContainerInterface:
         if self.profile != "base":
             self.add_env_files += ["--env-file", f".env.{self.profile}"]
 
-    def load_dot_vars(self) -> None:
+    def load_dot_vars(self):
         """
         Load environment variables from .env files into a dictionary.
 
@@ -111,7 +99,7 @@ class IsaacLabContainerInterface:
         result = subprocess.run(["docker", "image", "inspect", self.image_name], capture_output=True, text=True)
         return result.returncode == 0
 
-    def start(self) -> None:
+    def start(self):
         """
         Build and start the Docker container using the Docker compose command.
         """
@@ -141,7 +129,7 @@ class IsaacLabContainerInterface:
             env=self.environ,
         )
 
-    def enter(self) -> None:
+    def enter(self):
         """
         Enter the running container by executing a bash shell.
 
@@ -153,7 +141,7 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def stop(self) -> None:
+    def stop(self):
         """
         Stop the running container using the Docker compose command.
 
@@ -173,12 +161,12 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"Can't stop container '{self.container_name}' as it is not running.")
 
-    def copy(self, output_dir: Path | None = None) -> None:
+    def copy(self, output_dir: Path | None = None):
         """
         Copy artifacts from the running container to the host machine.
 
         Args:
-            output_dir (Path, optional): The directory to copy the artifacts to. Defaults to self.context_dir.
+            output_dir : The directory to copy the artifacts to. Defaults to self.context_dir.
 
         Raises:
             RuntimeError: If the container is not running.

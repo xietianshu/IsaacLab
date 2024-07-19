@@ -11,7 +11,7 @@ from pathlib import Path
 from isaaclab_container_utils.statefile import Statefile
 
 
-def install_xauth() -> None:
+def install_xauth():
     """
     Prompt the user to install xauth via apt if it is not already installed.
 
@@ -35,7 +35,7 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     does not exist, create it and configure it with the necessary xauth cookie.
 
     Args:
-        statefile (Statefile): An instance of the Statefile class to manage state variables.
+        statefile: An instance of the Statefile class to manage state variables.
 
     Returns:
         dict: A dictionary where the key is __ISAACLAB_TMP_XAUTH (referenced in x11.yaml)
@@ -57,7 +57,7 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     return {"__ISAACLAB_TMP_XAUTH": str(__ISAACLAB_TMP_XAUTH)}
 
 
-def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
+def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | None:
     """
     Check and configure X11 forwarding based on user input and existing state.
 
@@ -65,7 +65,7 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
     Configure X11 forwarding if enabled.
 
     Args:
-        statefile (Statefile): An instance of the Statefile class to manage state variables.
+        statefile: An instance of the Statefile class to manage state variables.
 
     Returns:
         list or str: A list containing the x11.yaml file configuration option if X11 forwarding is enabled,
@@ -104,7 +104,7 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | str:
     return None
 
 
-def x11_cleanup(statefile: Statefile) -> None:
+def x11_cleanup(statefile: Statefile):
     """
     Clean up the temporary .xauth file used for X11 forwarding.
 
