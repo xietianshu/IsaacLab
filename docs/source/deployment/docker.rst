@@ -100,7 +100,7 @@ Running the Container
       for the ``_build`` subdirectory where build artifacts are stored.
 
 
-The script ``container.py`` parllels three basic ``docker compose`` commands. Each can accept an `image_extension argument <#isaac-lab-image-extensions>`_,
+The script ``container.py`` parallels three basic ``docker compose`` commands. Each can accept an `image_extension argument <#isaac-lab-image-extensions>`_,
 or else they will default to image_extension ``base``:
 
 1. ``start``: This builds the image and brings up the container in detached mode (i.e. in the background).
