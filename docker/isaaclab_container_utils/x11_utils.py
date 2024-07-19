@@ -123,7 +123,7 @@ def create_x11_tmpfile(tmp_xauth: Path | None = None) -> Path:
     provided, or else a mktemp file will be created.
 
     Args:
-        tmp_xauth: An optional argument which when provided will have the MIT-MAGIC-COOKIE written to it.
+        tmp_xauth: An optional file arg which when provided will have the MIT-MAGIC-COOKIE written to it.
     """
     if tmp_xauth is None:
         # Create .tmp file with .xauth suffix
