@@ -46,14 +46,8 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     statefile.namespace = "X11"
     __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
     if __ISAACLAB_TMP_XAUTH is None or not Path(__ISAACLAB_TMP_XAUTH).exists():
-        __ISAACLAB_TMP_XAUTH = Path(
-            subprocess.run(["mktemp", "--suffix=.xauth"], capture_output=True, text=True).stdout.strip()
-        )
+        __ISAACLAB_TMP_XAUTH = create_x11_tmpfile()
         statefile.set_variable("__ISAACLAB_TMP_XAUTH", str(__ISAACLAB_TMP_XAUTH))
-        xauth_cookie = subprocess.run(
-            ["xauth", "nlist", os.environ["DISPLAY"]], capture_output=True, text=True
-        ).stdout.replace("ffff", "")
-        subprocess.run(["xauth", "-f", __ISAACLAB_TMP_XAUTH, "nmerge", "-"], input=xauth_cookie, text=True)
     return {"__ISAACLAB_TMP_XAUTH": str(__ISAACLAB_TMP_XAUTH)}
 
 
@@ -111,7 +105,7 @@ def x11_cleanup(statefile: Statefile):
     If the .xauth file exists, delete it and remove the corresponding state variable.
 
     Args:
-        statefile (Statefile): An instance of the Statefile class to manage state variables.
+        statefile: An instance of the Statefile class to manage state variables.
     """
     statefile.namespace = "X11"
     __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
@@ -119,3 +113,47 @@ def x11_cleanup(statefile: Statefile):
         print(f"[INFO] Removing temporary Isaac Lab .xauth file {__ISAACLAB_TMP_XAUTH}.")
         Path(__ISAACLAB_TMP_XAUTH).unlink()
         statefile.delete_variable("__ISAACLAB_TMP_XAUTH")
+
+
+def create_x11_tmpfile(tmp_xauth: Path | None = None) -> Path:
+    """
+    Creates an .xauth file with an MIT-MAGIC-COOKIE
+    derived from the current DISPLAY, returns its
+    location as a Path. Will use a Path for tmp_xauth if
+    provided, or else a mktemp file will be created.
+
+    Args:
+        tmp_xauth: An optional argument which when provided will have the MIT-MAGIC-COOKIE written to it.
+    """
+    if tmp_xauth is None:
+        # Create .tmp file with .xauth suffix
+        tmp_xauth = Path(
+            subprocess.run(["mktemp", "--suffix=.xauth"], capture_output=True, text=True).stdout.strip()
+        )
+    else:
+        Path(tmp_xauth).touch()
+    # Derive current MIT-MAGIC-COOKIE and make it universally addressible
+    xauth_cookie = subprocess.run(
+        ["xauth", "nlist", os.environ["DISPLAY"]], capture_output=True, text=True
+    ).stdout.replace("ffff", "")
+    # Merge the new cookie into the create .tmp file
+    subprocess.run(["xauth", "-f", tmp_xauth, "nmerge", "-"], input=xauth_cookie, text=True)
+    return tmp_xauth
+
+def x11_refresh(statefile: Statefile):
+    """
+    If x11 is enabled, generates a new .xauth file with the current MIT-MAGIC-COOKIE-1,
+    using the same filename so that the bind-mount and
+    XAUTHORITY var from build-time still work. DISPLAY will also 
+    need to be updated in the container environment command.
+
+    Args:
+        statefile: An instance of the Statefile class to manage state variables.    
+    """
+
+    statefile.namespace = "X11"
+    __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
+    if __ISAACLAB_TMP_XAUTH is not None and Path(__ISAACLAB_TMP_XAUTH).exists():
+        Path(__ISAACLAB_TMP_XAUTH).unlink()
+        create_x11_tmpfile(__ISAACLAB_TMP_XAUTH)
+        statefile.set_variable("__ISAACLAB_TMP_XAUTH", str(__ISAACLAB_TMP_XAUTH))

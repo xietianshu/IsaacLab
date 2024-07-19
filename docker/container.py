@@ -51,6 +51,7 @@ def main():
         ci.start()
     elif args.command == "enter":
         print(f"[INFO] Entering the existing {ci.container_name} container in a bash session...")
+        x11_utils.x11_refresh(ci.statefile)
         ci.enter()
     elif args.command == "copy":
         print(f"[INFO] Copying artifacts from the 'isaac-lab-{ci.container_name}' container...")

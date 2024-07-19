@@ -137,7 +137,7 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
-            subprocess.run(["docker", "exec", "--interactive", "--tty", f"{self.container_name}", "bash"])
+            subprocess.run(["docker", "exec", "--interactive", "--tty", "-e", f"DISPLAY={os.environ['DISPLAY']}", f"{self.container_name}", "bash"])
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
