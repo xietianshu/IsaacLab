@@ -15,18 +15,6 @@ from isaaclab_container_utils.statefile import Statefile
 class IsaacLabContainerInterface:
     """
     Interface for managing Isaac Lab containers.
-
-    Attributes:
-        context_dir (Path): The context directory for Docker operations, where the necessary YAML/.env/Dockerfiles files are located.
-        profile (str): The profile name for the container. Defaults to "base".
-        statefile (Statefile): An instance of the Statefile class to manage state variables.
-        container_name (str): The name of the container.
-        image_name (str): The name of the image.
-        add_yamls (list): YAML files to be included in the Docker compose command.
-        add_profiles (list): Profiles to be included in the Docker compose command.
-        add_env_files (list): Environment files to be included in the Docker compose command.
-        dot_vars (dict): Dictionary of environment variables loaded from .env files.
-        environ (dict): Dictionary of environment variables for subprocesses.
     """
 
     def __init__(
@@ -41,15 +29,15 @@ class IsaacLabContainerInterface:
         Initialize the IsaacLabContainerInterface with the given parameters.
 
         Args:
-            context_dir (Path): The context directory for Docker operations.
-            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
-            profile (str, optional): The profile name for the container. Defaults to "base".
-            yamls (List[str], optional): A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
-            envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
+            context_dir : The context directory for Docker operations.
+            statefile : An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
+            profile : The profile name for the container. Defaults to "base".
+            yamls : A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
+            envs : A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.context_dir = context_dir
         if statefile is None:
-            self.statefile = Statefile(path=self.context_dir / ".container.yaml")
+            self.statefile = Statefile(path=self.context_dir / ".container.cfg")
         else:
             self.statefile = statefile
         self.profile = profile
@@ -64,7 +52,7 @@ class IsaacLabContainerInterface:
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
-    def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None) -> None:
+    def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None):
         """
         Resolve the image extension by setting up YAML files, profiles, and environment files for the Docker compose command.
 
@@ -86,7 +74,7 @@ class IsaacLabContainerInterface:
             for env in envs:
                 self.add_env_files += ["--env-file", env]
 
-    def load_dot_vars(self) -> None:
+    def load_dot_vars(self):
         """
         Load environment variables from .env files into a dictionary.
 
@@ -116,6 +104,7 @@ class IsaacLabContainerInterface:
             ["docker", "container", "inspect", "-f", "{{.State.Status}}", self.container_name],
             capture_output=True,
             text=True,
+            check=True,
         ).stdout.strip()
         return status == "running"
 
@@ -131,7 +120,7 @@ class IsaacLabContainerInterface:
         result = subprocess.run(["docker", "image", "inspect", self.image_name], capture_output=True, text=True)
         return result.returncode == 0
 
-    def start(self) -> None:
+    def start(self):
         """
         Build and start the Docker container using the Docker compose command.
         """
@@ -162,7 +151,7 @@ class IsaacLabContainerInterface:
             env=self.environ,
         )
 
-    def enter(self) -> None:
+    def enter(self):
         """
         Enter the running container by executing a bash shell.
 
@@ -170,12 +159,20 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
-            print(f"[INFO] Entering the existing {self.container_name} container in a bash session...")
-            subprocess.run(["docker", "exec", "--interactive", "--tty", f"{self.container_name}", "bash"])
+            subprocess.run([
+                "docker",
+                "exec",
+                "--interactive",
+                "--tty",
+                "-e",
+                f"DISPLAY={os.environ['DISPLAY']}",
+                f"{self.container_name}",
+                "bash",
+            ])
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def stop(self) -> None:
+    def stop(self):
         """
         Stop the running container using the Docker compose command.
 
@@ -193,12 +190,12 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"Can't stop container '{self.container_name}' as it is not running.")
 
-    def copy(self, output_dir: Path | None = None) -> None:
+    def copy(self, output_dir: Path | None = None):
         """
         Copy artifacts from the running container to the host machine.
 
         Args:
-            output_dir (Path, optional): The directory to copy the artifacts to. Defaults to self.context_dir.
+            output_dir: The directory to copy the artifacts to. Defaults to self.context_dir.
 
         Raises:
             RuntimeError: If the container is not running.
@@ -209,7 +206,7 @@ class IsaacLabContainerInterface:
                 output_dir = self.context_dir
             output_dir = output_dir.joinpath("artifacts")
             if not output_dir.is_dir():
-                os.mkdir(output_dir)
+                output_dir.mkdir()
             artifacts = {
                 Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("logs"): output_dir.joinpath("logs"),
                 Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("docs/_build"): output_dir.joinpath("docs"),
