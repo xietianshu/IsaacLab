@@ -83,7 +83,7 @@ class IsaacLabContainerInterface:
             ["docker", "container", "inspect", "-f", "{{.State.Status}}", self.container_name],
             capture_output=True,
             text=True,
-            check=True,
+            check=False,
         ).stdout.strip()
         return status == "running"
 
@@ -114,7 +114,7 @@ class IsaacLabContainerInterface:
                 "build",
                 "isaac-lab-base",
             ],
-            check=True,
+            check=False,
             cwd=self.context_dir,
             env=self.environ,
         )
@@ -124,7 +124,7 @@ class IsaacLabContainerInterface:
             + self.add_profiles
             + self.add_env_files
             + ["up", "--detach", "--build", "--remove-orphans"],
-            check=True,
+            check=False,
             cwd=self.context_dir,
             env=self.environ,
         )
@@ -163,7 +163,7 @@ class IsaacLabContainerInterface:
                 + self.add_profiles
                 + self.add_env_files
                 + ["down"],
-                check=True,
+                check=False,
                 cwd=self.context_dir,
                 env=self.environ,
             )
@@ -203,7 +203,7 @@ class IsaacLabContainerInterface:
                         f"isaac-lab-{self.profile}:/workspace/isaaclab/{container_path}/",
                         f"{host_path}",
                     ],
-                    check=True,
+                    check=False,
                 )
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
