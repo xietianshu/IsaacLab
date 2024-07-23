@@ -44,12 +44,15 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     if not shutil.which("xauth"):
         install_xauth()
     statefile.namespace = "X11"
-    __ISAACLAB_TMP_DIR = subprocess.run(["mktemp", "-d"], capture_output=True, text=True, check=True).stdout.strip()
     __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
     if __ISAACLAB_TMP_XAUTH is None or not Path(__ISAACLAB_TMP_XAUTH).exists():
-        __ISAACLAB_TMP_XAUTH = create_x11_tmpfile(tmpdir=__ISAACLAB_TMP_DIR)
+        __ISAACLAB_TMP_DIR = subprocess.run(["mktemp", "-d"], capture_output=True, text=True, check=True).stdout.strip()
+        __ISAACLAB_TMP_XAUTH = create_x11_tmpfile(tmpdir=Path(__ISAACLAB_TMP_DIR))
         statefile.set_variable("__ISAACLAB_TMP_XAUTH", str(__ISAACLAB_TMP_XAUTH))
+    else:
+        __ISAACLAB_TMP_DIR = Path(__ISAACLAB_TMP_XAUTH).parent
     return {"__ISAACLAB_TMP_XAUTH": str(__ISAACLAB_TMP_XAUTH), "__ISAACLAB_TMP_DIR": str(__ISAACLAB_TMP_DIR)}
+
 
 
 def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | None:
