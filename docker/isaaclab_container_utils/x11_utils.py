@@ -54,7 +54,6 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     return {"__ISAACLAB_TMP_XAUTH": str(__ISAACLAB_TMP_XAUTH), "__ISAACLAB_TMP_DIR": str(__ISAACLAB_TMP_DIR)}
 
 
-
 def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | None:
     """
     Check and configure X11 forwarding based on user input and existing state.
