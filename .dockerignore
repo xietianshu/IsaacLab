@@ -13,7 +13,7 @@ docs/
 *.tmp
 # ignore docker
 docker/exports/
-docker/.container.yaml
+docker/.container.cfg
 # ignore recordings
 recordings/
 # ignore __pycache__

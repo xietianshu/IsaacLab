@@ -7,7 +7,7 @@
 # Please check above link for license information.
 
 # Base image
-ARG ISAACSIM_VERSION_ARG
+ARG ISAACSIM_VERSION_ARG=4.0.0
 FROM nvcr.io/nvidia/isaac-sim:${ISAACSIM_VERSION_ARG} AS base
 
 # Set default RUN shell to bash
@@ -141,3 +141,92 @@ FROM ros2 AS custom
 # from previous stages, ie ARG ISAACLAB_PATH_ARG if you need ISAACLAB_PATH_ARG from base
 ARG CUSTOM_MESSAGE_ARG
 RUN echo ${CUSTOM_MESSAGE_ARG}
+
+##################################
+####### EXPERIMENTAL CODE ########
+#######     BENEATH       ########
+##################################
+
+FROM ubuntu:22.04 AS pip
+
+# Set default RUN shell to bash
+SHELL ["/bin/bash", "-c"]
+
+# Adds labels to the Dockerfile
+LABEL version="1.0"
+LABEL description="Dockerfile for building and running the Isaac Lab framework in Ubuntu 22.04 container image."
+
+# Arguments
+# Path to the Isaac Lab directory
+ARG ISAACLAB_PATH
+# Home dir of docker user, typically '/root'
+ARG DOCKER_USER_HOME
+
+# Set environment variables
+ENV LANG=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+
+USER root
+
+# Install dependencies and remove cache
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    libglib2.0-0 \
+    ncurses-term && \
+    apt -y autoremove && apt clean autoclean && \
+    rm -rf /var/lib/apt/lists/*
+
+# for singularity usage, have to create the directories that will binded
+RUN mkdir -p ${DOCKER_USER_HOME}/.cache/ov && \
+    mkdir -p ${DOCKER_USER_HOME}/.cache/pip && \
+    mkdir -p ${DOCKER_USER_HOME}/.cache/nvidia/GLCache &&  \
+    mkdir -p ${DOCKER_USER_HOME}/.nv/ComputeCache && \
+    mkdir -p ${DOCKER_USER_HOME}/.nvidia-omniverse/logs && \
+    mkdir -p ${DOCKER_USER_HOME}/.local/share/ov/data && \
+    mkdir -p ${DOCKER_USER_HOME}/Documents
+
+# for singularity usage, create NVIDIA binary placeholders
+RUN touch /bin/nvidia-smi && \
+    touch /bin/nvidia-debugdump && \
+    touch /bin/nvidia-persistenced && \
+    touch /bin/nvidia-cuda-mps-control && \
+    touch /bin/nvidia-cuda-mps-server && \
+    touch /etc/localtime && \
+    mkdir -p /var/run/nvidia-persistenced && \
+    touch /var/run/nvidia-persistenced/socket
+
+# Install python3 and pip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip && \
+    apt -y autoremove && apt clean autoclean && \
+    rm -rf /var/lib/apt/lists/*
+# Maintain python3 as the default python version
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
+# Install python packages
+RUN pip3 install --no-cache-dir --upgrade pip && \
+    pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cu118
+
+RUN pip install isaacsim-rl isaacsim-replicator isaacsim-extscache-physics isaacsim-extscache-kit-sdk isaacsim-extscache-kit isaacsim-app --extra-index-url https://pypi.nvidia.com
+
+# Mount the Isaac Lab directory (files to exclude are defined in .dockerignore)
+COPY ../ ${ISAACLAB_PATH}
+
+# installing Isaac Lab dependencies
+# use pip caching to avoid reinstalling large packages
+RUN --mount=type=cache,target=${DOCKER_USER_HOME}/.cache/pip \
+    ${ISAACLAB_PATH}/isaaclab.sh --install
+
+# aliasing isaaclab.sh and python for convenience
+RUN echo "export ISAACLAB_PATH=${ISAACLAB_PATH}" >> ${HOME}/.bashrc && \
+    echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
+    echo "export TZ=$(date +%Z)" >> ${HOME}/.bashrc
+
+# make working directory as the Isaac Lab directory
+# this is the default directory when the container is run
+WORKDIR ${ISAACLAB_PATH}

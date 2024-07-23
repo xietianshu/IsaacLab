@@ -9,7 +9,7 @@ import shutil
 import subprocess
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 
 from isaaclab_container_utils.statefile import Statefile
 
@@ -19,15 +19,15 @@ class IsaacLabContainerInterface:
     Interface for managing Isaac Lab containers.
 
     Attributes:
-        context_dir (Path): The context directory for Docker operations, where the necessary YAML/.env/Dockerfiles files are located.
-        target (str): The targeted stage for the container. Defaults to "base".
-        statefile (Statefile): An instance of the Statefile class to manage state variables.
-        container_name (str): The name of the container.
-        image_name (str): The name of the image.
-        add_yamls (list): YAML files to be included in the Docker compose command.
-        add_env_files (list): Environment files to be included in the Docker compose command.
-        dot_vars (dict): Dictionary of environment variables loaded from .env files.
-        environ (dict): Dictionary of environment variables for subprocesses.
+        context_dir: The context directory for Docker operations, where the necessary YAML/.env/Dockerfiles files are located.
+        target: The targeted stage for the container. Defaults to "base".
+        statefile: An instance of the Statefile class to manage state variables.
+        container_name: The name of the container.
+        image_name: The name of the image.
+        add_yamls: YAML files to be included in the Docker compose command.
+        add_env_files: Environment files to be included in the Docker compose command.
+        dot_vars: Dictionary of environment variables loaded from .env files.
+        environ: Dictionary of environment variables for subprocesses.
     """
 
     def __init__(
@@ -37,20 +37,22 @@ class IsaacLabContainerInterface:
         statefile: None | Statefile = None,
         yamls: list[str] | None = None,
         envs: list[str] | None = None,
+        dev_volumes: bool = True,
+        workstation_volumes: bool = True
     ):
         """
         Initialize the IsaacLabContainerInterface with the given parameters.
 
         Args:
-            context_dir (Path): The context directory for Docker operations.
-            statefile (Statefile, optional): An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
-            target (str, optional): The targeted stage for the container. Defaults to "base".
-            yamls (List[str], optional): A list of yamls to extend base.yaml. They will be extended in the order they are provided.
-            envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
+            context_dir : The context directory for Docker operations.
+            statefile : An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.context_dir/.container.yaml).
+            profile : The profile name for the container. Defaults to "base".
+            yamls : A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
+            envs : A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.context_dir = context_dir
         if statefile is None:
-            self.statefile = Statefile(path=self.context_dir / ".container.yaml")
+            self.statefile = Statefile(path=self.context_dir / ".container.cfg")
         else:
             self.statefile = statefile
         self.target = target
@@ -63,29 +65,38 @@ class IsaacLabContainerInterface:
         self.image_name = f"isaac-lab-{self.target}:latest"
         self.environ = os.environ
         self.environ.update({"TARGET": self.target})
+        self.dev_volumes = dev_volumes
+        self.workstation_volumes = workstation_volumes
         self.resolve_image_extension(yamls, envs)
         self.load_dot_vars()
 
-    def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None) -> None:
+    def resolve_image_extension(self, yamls: list[str] | None = None, envs: list[str] | None = None):
         """
         Resolve the image extension by setting up YAML files and environment files for the Docker compose command.
 
         Args:
-            yamls (List[str], optional): A list of yamls to extend base.yaml. They will be extended in the order they are provided.
-            envs (List[str], optional): A list of envs to extend .env.base. They will be extended in the order they are provided.
+            yamls: A list of yamls to extend base.yaml. They will be extended in the order they are provided.
+            envs: A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         stage_dep_dict = self.parse_dockerfile()
-        self.yamls = ["base.yaml"]
-        self.env_files = [".env.base"]
+        self.yamls = ["isaac-lab.yaml"]
+        self.env_files = []
+
+        if self.dev_volumes:
+            self.yamls += ["dev-volumes.yaml"]
+        if self.workstation_volumes:
+            self.yamls += ["workstation-volumes.yaml"]
+        # self.yamls = ["base.yaml"]
+        # self.env_files = [".env.base"]
         # Determine if there is a chain of stage dependencies
         # from this stage, otherwise it's referencing a different Dockerfile
         if self.target in stage_dep_dict.keys():
             for stage in stage_dep_dict[self.target]:
-                if stage != "base":
-                    if os.path.isfile(os.path.join(self.context_dir, f"{stage}.yaml")):
-                        self.yamls += [f"{stage}.yaml"]
-                    if os.path.isfile(os.path.join(self.context_dir, f".env.{stage}")):
-                        self.env_files += [f".env.{stage}"]
+                # if stage != "base":
+                if os.path.isfile(os.path.join(self.context_dir, f"{stage}.yaml")):
+                    self.yamls += [f"{stage}.yaml"]
+                if os.path.isfile(os.path.join(self.context_dir, f".env.{stage}")):
+                    self.env_files += [f".env.{stage}"]
 
         if yamls is not None:
             self.yamls += yamls
@@ -93,7 +104,7 @@ class IsaacLabContainerInterface:
         if envs is not None:
             self.env_files += envs
 
-    def load_dot_vars(self) -> None:
+    def load_dot_vars(self):
         """
         Load environment variables from .env files into a dictionary.
 
@@ -105,7 +116,7 @@ class IsaacLabContainerInterface:
             with open(self.context_dir / self.env_files[i]) as f:
                 self.dot_vars.update(dict(line.strip().split("=", 1) for line in f if "=" in line))
 
-    def add_env_files(self) -> [str]:
+    def add_env_files(self) -> List[str]:
         """
         Put self.env_files into a state suitable for the docker compose CLI, with '--env-file' between
         every argument
@@ -117,7 +128,7 @@ class IsaacLabContainerInterface:
 
         return [self.env_files[int(i / 2)] if i % 2 == 1 else "--env-file" for i in range(len(self.env_files) * 2)]
 
-    def add_yamls(self) -> [str]:
+    def add_yamls(self) -> List[str]:
         """
         Put self.yamls into a state suitable for the docker compose CLI, with '--file' between
         every argument
@@ -141,6 +152,7 @@ class IsaacLabContainerInterface:
             ["docker", "container", "inspect", "-f", "{{.State.Status}}", self.container_name],
             capture_output=True,
             text=True,
+            check=False,
         ).stdout.strip()
         return status == "running"
 
@@ -153,10 +165,10 @@ class IsaacLabContainerInterface:
         Returns:
             bool: True if the image exists, False otherwise.
         """
-        result = subprocess.run(["docker", "image", "inspect", self.image_name], capture_output=True, text=True)
+        result = subprocess.run(["docker", "image", "inspect", self.image_name], capture_output=True, text=True, check=False)
         return result.returncode == 0
 
-    def start(self) -> None:
+    def start(self):
         """
         Build and start the Docker container using the Docker compose 'up' command.
         """
@@ -166,12 +178,12 @@ class IsaacLabContainerInterface:
             + self.add_yamls()
             + self.add_env_files()
             + ["up", "--detach", "--build", "--remove-orphans"],
-            check=True,
+            check=False,
             cwd=self.context_dir,
             env=self.environ,
         )
 
-    def build(self) -> None:
+    def build(self):
         """
         Build the Docker container using the Docker compose 'build' command.
         """
@@ -183,7 +195,7 @@ class IsaacLabContainerInterface:
             env=self.environ,
         )
 
-    def enter(self) -> None:
+    def enter(self):
         """
         Enter the running container by executing a bash shell.
 
@@ -191,12 +203,20 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
-            print(f"[INFO] Entering the existing {self.container_name} container in a bash session...")
-            subprocess.run(["docker", "exec", "--interactive", "--tty", f"{self.container_name}", "bash"])
+            subprocess.run([
+                "docker",
+                "exec",
+                "--interactive",
+                "--tty",
+                "-e",
+                f"DISPLAY={os.environ['DISPLAY']}",
+                f"{self.container_name}",
+                "bash",
+            ])
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def stop(self) -> None:
+    def stop(self):
         """
         Stop the running container using the Docker compose command.
 
@@ -214,12 +234,12 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"Can't stop container '{self.container_name}' as it is not running.")
 
-    def copy(self, output_dir: Path | None = None) -> None:
+    def copy(self, output_dir: Path | None = None):
         """
         Copy artifacts from the running container to the host machine.
 
         Args:
-            output_dir (Path, optional): The directory to copy the artifacts to. Defaults to self.context_dir.
+            output_dir: The directory to copy the artifacts to. Defaults to self.context_dir.
 
         Raises:
             RuntimeError: If the container is not running.
@@ -230,7 +250,7 @@ class IsaacLabContainerInterface:
                 output_dir = self.context_dir
             output_dir = output_dir.joinpath("artifacts")
             if not output_dir.is_dir():
-                os.mkdir(output_dir)
+                output_dir.mkdir()
             artifacts = {
                 Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("logs"): output_dir.joinpath("logs"),
                 Path(self.dot_vars["DOCKER_ISAACLAB_PATH"]).joinpath("docs/_build"): output_dir.joinpath("docs"),
@@ -256,13 +276,13 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def config(self, output_yaml: Path | None = None) -> None:
+    def config(self, output_yaml: Path | None = None):
         """
         Generate a docker-compose.yaml from the passed yamls, .envs, and either print to the
         terminal or create a yaml at output_yaml
 
         Args:
-            output_yaml (Path, optional): The absolute path of the yaml file to write the output to, if any. Defaults
+            output_yaml: The absolute path of the yaml file to write the output to, if any. Defaults
             to None, and simply prints to the terminal
         """
         print("[INFO] Configuring the passed options into a yaml...")
@@ -282,7 +302,7 @@ class IsaacLabContainerInterface:
         Parses a Dockerfile and returns a dictionary with each final stage as a key and a list of its dependency chain as the value.
 
         Args:
-        - file_name (str): The name of the Dockerfile.
+        - file_name: The name of the Dockerfile.
 
         Returns:
         - Dict[str, List[str]]: A dictionary where each key is a final stage and the value is a list of stages in the order of dependency.
