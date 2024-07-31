@@ -9,8 +9,8 @@ import argparse
 import shutil
 from pathlib import Path
 
-from isaaclab_container_utils import x11_utils
-from isaaclab_container_utils.isaaclab_container_interface import IsaacLabContainerInterface
+from utils import x11_utils
+from utils.isaaclab_container_interface import IsaacLabContainerInterface
 
 
 def main():

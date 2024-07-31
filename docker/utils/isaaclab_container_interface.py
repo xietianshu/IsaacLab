@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from isaaclab_container_utils.statefile import Statefile
+from utils.statefile import Statefile
 
 
 class IsaacLabContainerInterface:

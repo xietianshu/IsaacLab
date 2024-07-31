@@ -8,7 +8,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from isaaclab_container_utils.statefile import Statefile
+from utils.statefile import Statefile
 
 
 def install_xauth():
@@ -42,7 +42,9 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
               and the value is the corresponding tmp file which has been created.
     """
     if not shutil.which("xauth"):
-        install_xauth()
+        print("[INFO] xauth is not installed.")
+        print("[INFO] Please install it with 'apt install xauth'")
+        exit(1)
     statefile.namespace = "X11"
     __ISAACLAB_TMP_XAUTH = statefile.load_variable("__ISAACLAB_TMP_XAUTH")
     if __ISAACLAB_TMP_XAUTH is None or not Path(__ISAACLAB_TMP_XAUTH).exists():
@@ -86,11 +88,11 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | None:
             statefile.set_variable("__ISAACLAB_X11_FORWARDING_ENABLED", "0")
             print("[INFO] X11 forwarding is disabled from the container.")
     else:
-        print(f"[INFO] X11 Forwarding is configured as {__ISAACLAB_X11_FORWARDING_ENABLED} in .container.yaml")
+        print(f"[INFO] X11 Forwarding is configured as {__ISAACLAB_X11_FORWARDING_ENABLED} in .container.cfg")
         if __ISAACLAB_X11_FORWARDING_ENABLED == "1":
-            print("[INFO] To disable X11 forwarding, set __ISAACLAB_X11_FORWARDING_ENABLED=0 in .container.yaml")
+            print("[INFO] To disable X11 forwarding, set __ISAACLAB_X11_FORWARDING_ENABLED=0 in .container.cfg")
         else:
-            print("[INFO] To enable X11 forwarding, set __ISAACLAB_X11_FORWARDING_ENABLED=1 in .container.yaml")
+            print("[INFO] To enable X11 forwarding, set __ISAACLAB_X11_FORWARDING_ENABLED=1 in .container.cfg")
 
     if __ISAACLAB_X11_FORWARDING_ENABLED == "1":
         x11_envar = configure_x11(statefile)
