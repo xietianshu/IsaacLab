@@ -81,7 +81,7 @@ needed to run Isaac Lab inside a Docker container. A subset of these are summari
 * ``base.env``: Stores environment variables required for the ``base`` build process and the container itself. ``.env``
   files which end with something else (i.e. ``.env.ros2``) define these for `image_extension <#isaac-lab-image-extensions>`_.
 * ``container.py``: A script that interfaces with tools in ``isaaclab_container_utils`` to configure and build the image,
- and run and interact with the container.
+  and run and interact with the container.
 
 Running the Container
 ---------------------
@@ -116,10 +116,10 @@ The following shows how to launch the container in a detached state and enter it
 
     # Launch the container in detached mode
     # We don't pass an image extension arg, so it defaults to 'base'
-    ./docker/container.py start
+    python docker/container.py start
     # Enter the container
     # We pass 'base' explicitly, but if we hadn't it would default to 'base'
-    ./docker/container.py enter base
+    python docker/container.py enter base
 
 To copy files from the base container to the host machine, you can use the following command:
 
@@ -134,7 +134,7 @@ directories to the ``docker/artifacts`` directory. This is useful for copying th
 .. code::
 
     # stop the container
-    ./docker/container.py stop
+    python docker/container.py stop
 
 
 Python Interpreter
@@ -183,7 +183,7 @@ To view the contents of these volumes, you can use the following command:
 Isaac Lab Image Extensions
 --------------------------
 
-The produced image depends upon the arguments passed to ``./container.py start`` and ``./container.py stop``. These
+The produced image depends upon the arguments passed to ``container.py start`` and ``container.py stop``. These
 commands accept an ``image_extension`` as an additional argument. If no argument is passed, then these
 commands default to ``base``. Currently, the only valid ``image_extension`` arguments are (``base``, ``ros2``).
 Only one ``image_extension`` can be passed at a time, and the produced container will be named ``isaaclab``.
@@ -191,13 +191,13 @@ Only one ``image_extension`` can be passed at a time, and the produced container
 .. code:: bash
 
     # start base by default
-    ./container.py start
+    python docker/container.py start
     # stop base explicitly
-    ./container.py stop base
+    python docker/container.py stop base
     # start ros2 container
-    ./container.py start ros2
+    python docker/container.py start ros2
     # stop ros2 container
-    ./container.py stop ros2
+    python docker/container.py stop ros2
 
 The passed ``image_extension`` argument will build the image defined in ``Dockerfile.${image_extension}``,
 with the corresponding `profile`_ in the ``docker-compose.yaml`` and the envars from ``.env.${image_extension}``

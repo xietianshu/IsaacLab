@@ -9,8 +9,8 @@ import argparse
 import shutil
 from pathlib import Path
 
-from isaaclab_container_utils import x11_utils
-from isaaclab_container_utils.isaaclab_container_interface import IsaacLabContainerInterface
+from utils import x11_utils
+from utils.isaaclab_container_interface import IsaacLabContainerInterface
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
         "target", nargs="?", default="base", help="Optional container target specification. Defaults to 'base'."
     )
     parent_parser.add_argument(
-        "--add-yamls",
+        "--files",
         nargs="*",
         default=None,
         help=(
@@ -32,7 +32,7 @@ def main():
         ),
     )
     parent_parser.add_argument(
-        "--add-envs",
+        "--env-files",
         nargs="*",
         default=None,
         help=(
@@ -69,15 +69,9 @@ def main():
     if not shutil.which("docker"):
         raise RuntimeError("Docker is not installed! Please check the 'Docker Guide' for instruction.")
 
-    if args.target == 'pip':
-        workstation_volumes = False
-    else:
-        workstation_volumes = True
-
     # Creating container interface
     ci = IsaacLabContainerInterface(
-        dir=Path(__file__).resolve().parent, target=args.target, yamls=args.add_yamls, envs=args.add_envs,
-        workstation_volumes=workstation_volumes
+        dir=Path(__file__).resolve().parent, target=args.target, yamls=args.files, envs=args.env_files
     )
 
     print(f"[INFO] Using container target: {ci.target}")

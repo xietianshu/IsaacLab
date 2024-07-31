@@ -16,20 +16,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 #==
 # Functions
 #==
-
-install_apptainer() {
-    # Installation procedure from here: https://apptainer.org/docs/admin/main/installation.html#install-ubuntu-packages
-    read -p "[INFO] Required 'apptainer' package could not be found. Would you like to install it via apt? (y/N)" app_answer
-    if [ "$app_answer" != "${app_answer#[Yy]}" ]; then
-        sudo apt update && sudo apt install -y software-properties-common
-        sudo add-apt-repository -y ppa:apptainer/ppa
-        sudo apt update && sudo apt install -y apptainer
-    else
-        echo "[INFO] Exiting because apptainer was not installed"
-        exit
-    fi
-}
-
 # Function to check docker versions
 # If docker version is more than 25, the script errors out.
 check_docker_version() {
@@ -149,7 +135,9 @@ case $command in
         echo "Executing push command"
         [ -n "$profile" ] && echo "Using profile: $profile"
         if ! command -v apptainer &> /dev/null; then
-            install_apptainer
+            echo "[INFO] Exiting because apptainer was not installed"
+            echo "[INFO] You may follow the installation procedure from here: https://apptainer.org/docs/admin/main/installation.html#install-ubuntu-packages"
+            exit
         fi
         # Check if Docker image exists
         check_image_exists isaac-lab-$profile:latest

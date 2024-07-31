@@ -11,7 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, List
 
-from isaaclab_container_utils.statefile import Statefile
+from utils.statefile import Statefile
 
 
 class IsaacLabContainerInterface:
@@ -37,8 +37,6 @@ class IsaacLabContainerInterface:
         statefile: None | Statefile = None,
         yamls: list[str] | None = None,
         envs: list[str] | None = None,
-        dev_volumes: bool = True,
-        workstation_volumes: bool = True
     ):
         """
         Initialize the IsaacLabContainerInterface with the given parameters.
@@ -68,8 +66,6 @@ class IsaacLabContainerInterface:
         self.image_name = f"isaac-lab-{self.target}:latest"
         self.environ = os.environ
         self.environ.update({"TARGET": self.target})
-        self.dev_volumes = dev_volumes
-        self.workstation_volumes = workstation_volumes
         self.resolve_compose_cfg(yamls, envs)
         # self.load_dot_vars()
 
@@ -228,7 +224,7 @@ class IsaacLabContainerInterface:
         print(f"[INFO] Building the docker image {self.image_name}...")
         subprocess.run(
             ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["build"],
-            check=True,
+            check=False,
             cwd=self.dir,
             env=self.environ,
         )
@@ -265,7 +261,7 @@ class IsaacLabContainerInterface:
             print(f"[INFO] Stopping the launched docker container {self.container_name}...")
             subprocess.run(
                 ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["down"],
-                check=True,
+                check=False,
                 cwd=self.dir,
                 env=self.environ,
             )
@@ -308,7 +304,7 @@ class IsaacLabContainerInterface:
                         f"isaac-lab-{self.target}:{container_path}/",
                         f"{host_path}",
                     ],
-                    check=True,
+                    check=False,
                 )
             print("\n[INFO] Finished copying the artifacts from the container.")
         else:
