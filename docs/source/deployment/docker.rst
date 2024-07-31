@@ -81,7 +81,7 @@ needed to run Isaac Lab inside a Docker container. A subset of these are summari
 * ``base.env``: Stores environment variables required for the ``base`` build process and the container itself. ``.env``
   files which end with something else (i.e. ``.env.ros2``) define these for `image_extension <#isaac-lab-image-extensions>`_.
 * ``container.py``: A script that interfaces with tools in ``isaaclab_container_utils`` to configure and build the image,
- and run and interact with the container.
+  and run and interact with the container.
 
 Running the Container
 ---------------------
