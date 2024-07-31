@@ -134,7 +134,7 @@ directories to the ``docker/artifacts`` directory. This is useful for copying th
 .. code::
 
     # stop the container
-    ./docker/container.py stop
+    python docker/container.py stop
 
 
 Python Interpreter
