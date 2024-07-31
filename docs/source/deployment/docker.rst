@@ -116,7 +116,7 @@ The following shows how to launch the container in a detached state and enter it
 
     # Launch the container in detached mode
     # We don't pass an image extension arg, so it defaults to 'base'
-    ./docker/container.py start
+    python docker/container.py start
     # Enter the container
     # We pass 'base' explicitly, but if we hadn't it would default to 'base'
     ./docker/container.py enter base
