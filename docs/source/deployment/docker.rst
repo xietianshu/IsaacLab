@@ -195,7 +195,7 @@ Only one ``image_extension`` can be passed at a time, and the produced container
     # stop base explicitly
     ./container.py stop base
     # start ros2 container
-    ./container.py start ros2
+    python docker/container.py start ros2
     # stop ros2 container
     ./container.py stop ros2
 
