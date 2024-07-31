@@ -119,7 +119,7 @@ The following shows how to launch the container in a detached state and enter it
     python docker/container.py start
     # Enter the container
     # We pass 'base' explicitly, but if we hadn't it would default to 'base'
-    ./docker/container.py enter base
+    python docker/container.py enter base
 
 To copy files from the base container to the host machine, you can use the following command:
 
