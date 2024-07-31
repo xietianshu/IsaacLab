@@ -1,9 +1,0 @@
-services:
-  # This service is the base Isaac Lab image
-  isaac-lab:
-    env_file:
-      - .env.pip
-    build:
-      args:
-        - ISAACLAB_PATH=${DOCKER_ISAACLAB_PATH}
-        - DOCKER_USER_HOME=${DOCKER_USER_HOME}

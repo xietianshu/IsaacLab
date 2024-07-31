@@ -1,5 +1,0 @@
-services:
-  isaac-lab:
-    build:
-      args:
-        - CUSTOM_MESSAG_ARG=${CUSTOM_MESSAGE}

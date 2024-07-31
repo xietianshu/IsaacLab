@@ -1,0 +1,10 @@
+# This service adds a custom
+# installation on top of the ros2 image
+services:
+  isaac-lab:
+    extends:
+        file: ../ros2/ros2.yaml
+        service: isaac-lab
+    build:
+      args:
+        - CUSTOM_MESSAGE="Hello world!"

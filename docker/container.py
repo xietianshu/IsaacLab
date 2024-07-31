@@ -76,7 +76,7 @@ def main():
 
     # Creating container interface
     ci = IsaacLabContainerInterface(
-        context_dir=Path(__file__).resolve().parent, target=args.target, yamls=args.add_yamls, envs=args.add_envs,
+        dir=Path(__file__).resolve().parent, target=args.target, yamls=args.add_yamls, envs=args.add_envs,
         workstation_volumes=workstation_volumes
     )
 

@@ -1,3 +1,4 @@
+# Snippet, meant to be merged
 services:
   isaac-lab:
     environment:

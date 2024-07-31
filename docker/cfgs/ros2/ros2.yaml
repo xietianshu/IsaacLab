@@ -1,12 +1,13 @@
-# This service adds a ROS2 Humble
+# This extension adds a ROS2 Humble
 # installation on top of the base image
 services:
   isaac-lab:
-    env_file:
-      - .env.ros2
+    extends:
+        file: ../base/base.yaml
+        service: isaac-lab
     build:
       args:
         # ROS2_APT_PACKAGE will default to NONE. This is to
         # avoid a warning message when building only the base profile
         # with the .env.base file
-        - ROS2_APT_PACKAGE_ARG=${ROS2_APT_PACKAGE:-NONE}
+        - ROS2_APT_PACKAGE_ARG=ros-base
