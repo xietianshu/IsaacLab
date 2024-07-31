@@ -11,20 +11,6 @@ from pathlib import Path
 from utils.statefile import Statefile
 
 
-def install_xauth():
-    """
-    Prompt the user to install xauth via apt if it is not already installed.
-
-    If the user agrees, update the package list and install xauth.
-    """
-    xauth_answer = input("[INFO] xauth is not installed. Would you like to install it via apt? (y/N) ")
-    if xauth_answer.lower() == "y":
-        subprocess.run(["sudo", "apt", "update"], check=True)
-        subprocess.run(["sudo", "apt", "install", "xauth"], check=True)
-    else:
-        print("[INFO] Did not install xauth. X11 forwarding not enabled.")
-
-
 # This method of x11 enabling forwarding was inspired by osrf/rocker
 # https://github.com/osrf/rocker
 def configure_x11(statefile: Statefile) -> dict[str, str]:
