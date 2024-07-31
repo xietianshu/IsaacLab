@@ -197,7 +197,7 @@ Only one ``image_extension`` can be passed at a time, and the produced container
     # start ros2 container
     python docker/container.py start ros2
     # stop ros2 container
-    ./container.py stop ros2
+    python docker/container.py stop ros2
 
 The passed ``image_extension`` argument will build the image defined in ``Dockerfile.${image_extension}``,
 with the corresponding `profile`_ in the ``docker-compose.yaml`` and the envars from ``.env.${image_extension}``
