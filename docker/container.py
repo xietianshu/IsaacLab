@@ -9,8 +9,8 @@ import argparse
 import shutil
 from pathlib import Path
 
-from isaaclab_container_utils import x11_utils
-from isaaclab_container_utils.isaaclab_container_interface import IsaacLabContainerInterface
+from utils import x11_utils
+from utils.isaaclab_container_interface import IsaacLabContainerInterface
 
 
 def main():
@@ -21,7 +21,7 @@ def main():
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument("profile", nargs="?", default="base", help="Optional container profile specification.")
     parent_parser.add_argument(
-        "--add-yamls",
+        "--files",
         nargs="*",
         default=None,
         help=(
@@ -30,7 +30,7 @@ def main():
         ),
     )
     parent_parser.add_argument(
-        "--add-envs",
+        "--env-files",
         nargs="*",
         default=None,
         help=(
@@ -60,7 +60,7 @@ def main():
 
     # Creating container interface
     ci = IsaacLabContainerInterface(
-        context_dir=Path(__file__).resolve().parent, profile=args.profile, yamls=args.add_yamls, envs=args.add_envs
+        context_dir=Path(__file__).resolve().parent, profile=args.profile, yamls=args.files, envs=args.env_files
     )
 
     print(f"[INFO] Using container profile: {ci.profile}")
