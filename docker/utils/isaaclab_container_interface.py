@@ -10,6 +10,7 @@ import subprocess
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+import yaml
 
 from utils.statefile import Statefile
 
@@ -67,7 +68,7 @@ class IsaacLabContainerInterface:
         self.environ = os.environ
         self.environ.update({"TARGET": self.target})
         self.resolve_compose_cfg(yamls, envs)
-        # self.load_dot_vars()
+        self.load_dot_vars()
 
     def resolve_compose_cfg(self, yamls: list[str] | None = None, envs: list[str] | None = None):
         """
@@ -77,7 +78,7 @@ class IsaacLabContainerInterface:
             yamls: A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs: A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
-        stage_dep_dict = self.parse_dockerfile()
+        stage_dep_dict = self.parse_dockerfiles(yamls)
         # self.yamls = [self.compose_cfgs.joinpath("isaac-lab/isaac-lab.yaml")]
         self.yamls = []
         self.env_files = []
@@ -297,23 +298,19 @@ class IsaacLabContainerInterface:
             env=self.environ,
         )
 
-    def parse_dockerfile(self, file_name: str | None = None):
+    def parse_dockerfiles(self, yamls: str | None = None, file_name: str | None = None):
         """
         Parses a Dockerfile and returns a dictionary with each final stage as a key and a list of its dependency chain as the value.
 
         Args:
+        - yamls: List of yamls which could potentially contain Dockerfiles
         - file_name: The name of the Dockerfile.
 
         Returns:
         - Dict[str, List[str]]: A dictionary where each key is a final stage and the value is a list of stages in the order of dependency.
         """
-        stages = []
-        stage_dependencies = defaultdict(list)
-
-        # Regular expressions to match stages and COPY/FROM instructions
-        stage_pattern = re.compile(r"FROM\s+([^\s]+)(?:\s+AS\s+([^\s]+))?", re.IGNORECASE)
-        copy_pattern = re.compile(r"COPY\s+--from=([^\s]+)", re.IGNORECASE)
-
+        # Dockerfiles to be parsed
+        dockerfiles = []
         # Read the Dockerfile content
         if file_name is None:
             file_name = os.path.join(self.dir, "Dockerfile")
@@ -322,42 +319,36 @@ class IsaacLabContainerInterface:
                     "No Dockerfile was passed for parsing, and a Dockerfile couldn't be found at the passed context"
                     " root."
                 )
-        with open(file_name) as file:
-            dockerfile_content = file.read()
+            else:
+                dockerfiles.append(file_name)
+        
+        if yamls is not None:
+            for file in yamls:
+                if os.path.isabs(file):
+                    with open(file, 'r') as fd:
+                        yml = yaml.safe_load(fd)
+                        try:
+                            # If there is a Dockerfile directive we parse that as well
+                            dockerfiles.append(Path(os.path.expandvars(yml['services']['isaac-lab']['build']['dockerfile'])))
+                        except:
+                            # If there is no Dockerfile directive then we don't need to parse the Dockerfile
+                            continue
+        
+        for file in dockerfiles:
+            print(file)
+            outputs = extract_stage_dependencies(file)
+            print(outputs)
 
-        # Parse the Dockerfile
-        for line in dockerfile_content.splitlines():
-            stage_match = stage_pattern.match(line)
-            copy_match = copy_pattern.search(line)
-
-            if stage_match:
-                base_image = stage_match.group(1)
-                stage_name = stage_match.group(2)
-                current_stage = stage_name if stage_name else base_image
-                stages.append(current_stage)
-
-                # Add dependency if the base image is a stage name
-                if base_image in stages:
-                    stage_dependencies[current_stage].append(base_image)
-
-            if copy_match:
-                stage_dependencies[current_stage].append(copy_match.group(1))
-
-        # Organize into a dictionary based on dependencies
-        result = {}
-        for stage in stages:
-            chain = []
-            to_visit = [stage]
-            while to_visit:
-                current = to_visit.pop(0)
-                if current not in chain:
-                    chain.append(current)
-                    to_visit = stage_dependencies[current] + to_visit
-            result[stage] = chain[::-1]
-
-        return result
+        return outputs
 
     def search_compose_cfgs(self, file):
+        # Return if path to file is 
+        # absolute and file exists
+        if os.path.isabs(file):
+            if os.path.isfile(file):
+                return file
+            raise FileNotFoundError("The absolute path to required file {file} was passed, but the file does not exist")
+        
         hint = None
         if file.endswith(".yaml"):
             hint, _ = file.split(".")
@@ -377,3 +368,46 @@ class IsaacLabContainerInterface:
                 return os.path.abspath(os.path.join(root, file))
 
         raise FileNotFoundError(f"Couldn't find required {file} under the compose_cfgs directory {self.compose_cfgs}")
+
+def extract_stage_dependencies(file_name):
+    stages = []
+    stage_dependencies = defaultdict(list)
+
+    # Regular expressions to match stages and COPY/FROM instructions
+    stage_pattern = re.compile(r"FROM\s+([^\s]+)(?:\s+AS\s+([^\s]+))?", re.IGNORECASE)
+    copy_pattern = re.compile(r"COPY\s+--from=([^\s]+)", re.IGNORECASE)
+
+    with open(file_name) as file:
+        dockerfile_content = file.read()
+
+    # Parse the Dockerfile
+    for line in dockerfile_content.splitlines():
+        stage_match = stage_pattern.match(line)
+        copy_match = copy_pattern.search(line)
+
+        if stage_match:
+            base_image = stage_match.group(1)
+            stage_name = stage_match.group(2)
+            current_stage = stage_name if stage_name else base_image
+            stages.append(current_stage)
+
+            # Add dependency if the base image is a stage name
+            if base_image in stages:
+                stage_dependencies[current_stage].append(base_image)
+
+        if copy_match:
+            stage_dependencies[current_stage].append(copy_match.group(1))
+
+    # Organize into a dictionary based on dependencies
+    result = {}
+    for stage in stages:
+        chain = []
+        to_visit = [stage]
+        while to_visit:
+            current = to_visit.pop(0)
+            if current not in chain:
+                chain.append(current)
+                to_visit = stage_dependencies[current] + to_visit
+        result[stage] = chain[::-1]
+
+    return result

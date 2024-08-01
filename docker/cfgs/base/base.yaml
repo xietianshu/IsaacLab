@@ -8,8 +8,8 @@ services:
       args:
         ISAACSIM_VERSION: ${ISAACSIM_VERSION}
         ISAACSIM_ROOT_PATH: ${DOCKER_ISAACSIM_ROOT_PATH}
-        DOCKER_ISAACLAB_PATH: ${DOCKER_ISAACLAB_PATH}
-        DOCKER_USER_HOME: ${DOCKER_USER_HOME}
+        ISAACLAB_PATH: ${DOCKER_ISAACLAB_PATH}
+        USER_HOME: ${DOCKER_USER_HOME}
     image: isaac-lab-${TARGET}
     container_name: isaac-lab-${TARGET}
     environment:
@@ -20,7 +20,7 @@ services:
       - ISAACSIM_PATH=${DOCKER_ISAACLAB_PATH}/_isaac_sim
       - ISAACSIM_ROOT_PATH=${DOCKER_ISAACSIM_ROOT_PATH}
       - ISAACLAB_PATH=${DOCKER_ISAACLAB_PATH}
-      - DOCKER_USER_HOME=${DOCKER_USER_HOME}
+      - USER_HOME=${DOCKER_USER_HOME}
       - ISAACSIM_VERSION=${ISAACSIM_VERSION}
     network_mode: host
     deploy:

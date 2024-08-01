@@ -22,9 +22,9 @@ LABEL description="Dockerfile for building and running the Isaac Lab framework i
 # Path to Isaac Sim root folder
 ARG ISAACSIM_ROOT_PATH
 # Path to the Isaac Lab directory
-ARG DOCKER_ISAACLAB_PATH
+ARG ISAACLAB_PATH
 # Home dir of docker user, typically '/root'
-ARG DOCKER_USER_HOME
+ARG USER_HOME
 
 # Install dependencies and remove cache
 RUN --mount=type=cache,target=/var/cache/apt \
@@ -38,26 +38,26 @@ RUN --mount=type=cache,target=/var/cache/apt \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the Isaac Lab directory (files to exclude are defined in .dockerignore)
-COPY ../ ${DOCKER_ISAACLAB_PATH}
+COPY ../ ${ISAACLAB_PATH}
 
 # Set up a symbolic link between the installed Isaac Sim root folder and _isaac_sim in the Isaac Lab directory
-RUN ln -sf ${ISAACSIM_ROOT_PATH} ${DOCKER_ISAACLAB_PATH}/_isaac_sim
+RUN ln -sf ${ISAACSIM_ROOT_PATH} ${ISAACLAB_PATH}/_isaac_sim
 
-# Install apt dependencies for extensions that declare them in their extension.toml
-RUN --mount=type=cache,target=/var/cache/apt \
-    ${DOCKER_ISAACLAB_PATH}/isaaclab.sh -p ${DOCKER_ISAACLAB_PATH}/tools/install_deps.py apt ${DOCKER_ISAACLAB_PATH}/source/extensions && \
-    apt -y autoremove && apt clean autoclean && \
-    rm -rf /var/lib/apt/lists/*
+# # Install apt dependencies for extensions that declare them in their extension.toml
+# RUN --mount=type=cache,target=/var/cache/apt \
+#     ${ISAACLAB_PATH}/isaaclab.sh -p ${ISAACLAB_PATH}/tools/install_deps.py apt ${ISAACLAB_PATH}/source/extensions && \
+#     apt -y autoremove && apt clean autoclean && \
+#     rm -rf /var/lib/apt/lists/*
 
 # for singularity usage, have to create the directories that will binded
 RUN mkdir -p ${ISAACSIM_ROOT_PATH}/kit/cache && \
-    mkdir -p ${DOCKER_USER_HOME}/.cache/ov && \
-    mkdir -p ${DOCKER_USER_HOME}/.cache/pip && \
-    mkdir -p ${DOCKER_USER_HOME}/.cache/nvidia/GLCache &&  \
-    mkdir -p ${DOCKER_USER_HOME}/.nv/ComputeCache && \
-    mkdir -p ${DOCKER_USER_HOME}/.nvidia-omniverse/logs && \
-    mkdir -p ${DOCKER_USER_HOME}/.local/share/ov/data && \
-    mkdir -p ${DOCKER_USER_HOME}/Documents
+    mkdir -p ${USER_HOME}/.cache/ov && \
+    mkdir -p ${USER_HOME}/.cache/pip && \
+    mkdir -p ${USER_HOME}/.cache/nvidia/GLCache &&  \
+    mkdir -p ${USER_HOME}/.nv/ComputeCache && \
+    mkdir -p ${USER_HOME}/.nvidia-omniverse/logs && \
+    mkdir -p ${USER_HOME}/.local/share/ov/data && \
+    mkdir -p ${USER_HOME}/Documents
 
 # for singularity usage, create NVIDIA binary placeholders
 RUN touch /bin/nvidia-smi && \
@@ -71,8 +71,8 @@ RUN touch /bin/nvidia-smi && \
 
 # installing Isaac Lab dependencies
 # use pip caching to avoid reinstalling large packages
-RUN --mount=type=cache,target=${DOCKER_USER_HOME}/.cache/pip \
-    ${DOCKER_ISAACLAB_PATH}/isaaclab.sh --install
+# RUN --mount=type=cache,target=${USER_HOME}/.cache/pip \
+#     ${ISAACLAB_PATH}/isaaclab.sh --install
 
 # aliasing isaaclab.sh and python for convenience
 RUN echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
@@ -85,15 +85,15 @@ RUN echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
 
 # make working directory as the Isaac Lab directory
 # this is the default directory when the container is run
-WORKDIR ${DOCKER_ISAACLAB_PATH}
+WORKDIR ${ISAACLAB_PATH}
 
 # Everything past this stage is to install
 # ROS2 Humble
 FROM base AS ros2
 
 # Re-using ARGs from previous stage
-ARG DOCKER_ISAACLAB_PATH
-ARG DOCKER_USER_HOME
+ARG ISAACLAB_PATH
+ARG USER_HOME
 # Which ROS2 apt package to install
 ARG ROS2_APT_PACKAGE
 
@@ -116,7 +116,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
     ros-dev-tools && \
     # Install rosdeps for extensions that declare a ros_ws in
     # their extension.toml
-    ${DOCKER_ISAACLAB_PATH}/isaaclab.sh -p ${DOCKER_ISAACLAB_PATH}/tools/install_deps.py rosdep ${DOCKER_ISAACLAB_PATH}/source/extensions && \
+    ${ISAACLAB_PATH}/isaaclab.sh -p ${ISAACLAB_PATH}/tools/install_deps.py rosdep ${ISAACLAB_PATH}/source/extensions && \
     apt -y autoremove && apt clean autoclean && \
     rm -rf /var/lib/apt/lists/* && \
     # Add sourcing of setup.bash to .bashrc
@@ -124,17 +124,17 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # Copy the RMW specifications for ROS2
 # https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_ros.html#enabling-the-ros-bridge-extension
-COPY docker/.ros/ ${DOCKER_USER_HOME}/.ros/
+COPY docker/.ros/ ${USER_HOME}/.ros/
 
 # Add any customizations you would like to be present when you run `container.py start custom` below
 # If you don't require ros2, you can change the underlying layer to base, ie "FROM base AS custom"
 FROM ros2 AS custom
 
 # Re-using ARGs from previous stage
-ARG DOCKER_ISAACLAB_PATH
-ARG DOCKER_USER_HOME
+ARG ISAACLAB_PATH
+ARG USER_HOME
 # Please make sure to re-declare any args which you require
-# from previous stages, ie ARG DOCKER_ISAACLAB_PATH if you need DOCKER_ISAACLAB_PATH from base
+# from previous stages, ie ARG ISAACLAB_PATH if you need ISAACLAB_PATH from base
 ARG CUSTOM_MESSAGE
 RUN echo ${CUSTOM_MESSAGE} && \
-    touch ${DOCKER_ISAACLAB_PATH}/TEST_FILE
+    touch ${ISAACLAB_PATH}/TEST_FILE
