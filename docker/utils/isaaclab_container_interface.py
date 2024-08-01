@@ -9,7 +9,7 @@ import shutil
 import subprocess
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 from utils.statefile import Statefile
 
@@ -49,7 +49,7 @@ class IsaacLabContainerInterface:
             envs : A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
         self.dir = dir
-        self.compose_cfgs = Path(self.dir/ "cfgs")
+        self.compose_cfgs = Path(self.dir / "cfgs")
         if not self.compose_cfgs.is_dir():
             raise FileNotFoundError(f"Required directory {self.compose_cfgs} was not found.")
         if statefile is None:
@@ -99,29 +99,7 @@ class IsaacLabContainerInterface:
     def dot_vars(self):
         self.load_dot_vars()
         return self._dot_vars
-    
-    def search_compose_cfgs(self, file):
-        hint = None
-        if file.endswith(".yaml"):
-            hint, _ = file.split(".")
 
-        if file.endswith(".env"):
-            # Assume a .env will be of the form .<hint>.env
-            _, _, hint = file.split(".")
-
-        if not hint is None:
-            hint_path = os.path.join(self.compose_cfgs, f"{hint}", file)
-            if os.path.isfile(hint_path):
-                return hint_path
-        
-        # Brute force search self.compose_cfgs if the hint path failed
-        for root, _, files in os.walk(self.compose_cfgs):
-            if file in files:
-                return os.path.abspath(os.path.join(root, file))
-            
-        raise FileNotFoundError(f"Couldn't find required {file} under the compose_cfgs directory {self.compose_cfgs}")
-        
-    
     def load_dot_vars(self):
         """
         Load environment variables from .env files into a dictionary.
@@ -135,7 +113,7 @@ class IsaacLabContainerInterface:
             with open(self.dir / abs_env_files[i]) as f:
                 self._dot_vars.update(dict(line.strip().split("=", 1) for line in f if "=" in line))
 
-    def add_env_files(self) -> List[str]:
+    def add_env_files(self) -> list[str]:
         """
         Put self.env_files into a state suitable for the docker compose CLI, with '--env-file' between
         every argument
@@ -147,7 +125,7 @@ class IsaacLabContainerInterface:
         abs_env_files = [self.search_compose_cfgs(file) for file in self.env_files]
         return [abs_env_files[int(i / 2)] if i % 2 == 1 else "--env-file" for i in range(len(abs_env_files) * 2)]
 
-    def add_yamls(self) -> List[str]:
+    def add_yamls(self) -> list[str]:
         """
         Put self.yamls into a state suitable for the docker compose CLI, with '--file' between
         every argument
@@ -156,7 +134,7 @@ class IsaacLabContainerInterface:
             [str]: A list of strings, with '--file' first and then interpolated between the strings of
                    self.yamls
         """
-        abs_yaml_files =  [self.search_compose_cfgs(file) for file in self.yamls]
+        abs_yaml_files = [self.search_compose_cfgs(file) for file in self.yamls]
         return [abs_yaml_files[int(i / 2)] if i % 2 == 1 else "--file" for i in range(len(abs_yaml_files) * 2)]
 
     def is_container_running(self) -> bool:
@@ -185,7 +163,9 @@ class IsaacLabContainerInterface:
         Returns:
             bool: True if the image exists, False otherwise.
         """
-        result = subprocess.run(["docker", "image", "inspect", self.image_name], capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            ["docker", "image", "inspect", self.image_name], capture_output=True, text=True, check=False
+        )
         return result.returncode == 0
 
     def start(self):
@@ -376,3 +356,24 @@ class IsaacLabContainerInterface:
             result[stage] = chain[::-1]
 
         return result
+
+    def search_compose_cfgs(self, file):
+        hint = None
+        if file.endswith(".yaml"):
+            hint, _ = file.split(".")
+
+        if file.endswith(".env"):
+            # Assume a .env will be of the form .<hint>.env
+            _, _, hint = file.split(".")
+
+        if hint is not None:
+            hint_path = os.path.join(self.compose_cfgs, f"{hint}", file)
+            if os.path.isfile(hint_path):
+                return hint_path
+
+        # Brute force search self.compose_cfgs if the hint path failed
+        for root, _, files in os.walk(self.compose_cfgs):
+            if file in files:
+                return os.path.abspath(os.path.join(root, file))
+
+        raise FileNotFoundError(f"Couldn't find required {file} under the compose_cfgs directory {self.compose_cfgs}")
