@@ -7,7 +7,7 @@
 # Please check above link for license information.
 
 # Base image
-ARG ISAACSIM_VERSION=4.0.0
+ARG ISAACSIM_VERSION
 FROM nvcr.io/nvidia/isaac-sim:${ISAACSIM_VERSION} AS base
 
 # Set default RUN shell to bash
@@ -25,12 +25,6 @@ ARG ISAACSIM_ROOT_PATH
 ARG DOCKER_ISAACLAB_PATH
 # Home dir of docker user, typically '/root'
 ARG DOCKER_USER_HOME
-
-# Set environment variables
-ENV LANG=C.UTF-8
-ENV DEBIAN_FRONTEND=noninteractive
-
-USER root
 
 # Install dependencies and remove cache
 RUN --mount=type=cache,target=/var/cache/apt \
@@ -103,37 +97,30 @@ ARG DOCKER_USER_HOME
 # Which ROS2 apt package to install
 ARG ROS2_APT_PACKAGE
 
-# Set ROS2 middleware implementation to use (e.g. rmw_fastrtps_cpp, rmw_cyclonedds_cpp)
-ENV RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-# Path to fastdds.xml file to use (only needed when using fastdds)
-ENV FASTRTPS_DEFAULT_PROFILES_FILE=${DOCKER_USER_HOME}/.ros/fastdds.xml
-# Path to cyclonedds.xml file to use (only needed when using cyclonedds)
-ENV CYCLONEDDS_URI=${DOCKER_USER_HOME}/.ros/cyclonedds.xml
-
-# # ROS2 Humble Apt installations
-# RUN --mount=type=cache,target=/var/cache/apt \
-#     apt-get update && apt-get install -y --no-install-recommends \
-#     curl \
-#     # Install ROS2 Humble \
-#     software-properties-common && \
-#     add-apt-repository universe && \
-#     curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-#     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo jammy) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
-#     apt-get update && apt-get install -y --no-install-recommends \
-#     ros-humble-${ROS2_APT_PACKAGE} \
-#     ros-humble-vision-msgs \
-#     # Install both FastRTPS and CycloneDDS
-#     ros-humble-rmw-cyclonedds-cpp \
-#     ros-humble-rmw-fastrtps-cpp \
-#     # This includes various dev tools including colcon
-#     ros-dev-tools && \
-#     # Install rosdeps for extensions that declare a ros_ws in
-#     # their extension.toml
-#     ${ISAACLAB_PATH}/isaaclab.sh -p ${ISAACLAB_PATH}/tools/install_deps.py rosdep ${ISAACLAB_PATH}/source/extensions && \
-#     apt -y autoremove && apt clean autoclean && \
-#     rm -rf /var/lib/apt/lists/* && \
-#     # Add sourcing of setup.bash to .bashrc
-#     echo "source /opt/ros/humble/setup.bash" >> ${HOME}/.bashrc
+# ROS2 Humble Apt installations
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    # Install ROS2 Humble \
+    software-properties-common && \
+    add-apt-repository universe && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo jammy) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ros-humble-${ROS2_APT_PACKAGE} \
+    ros-humble-vision-msgs \
+    # Install both FastRTPS and CycloneDDS
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-rmw-fastrtps-cpp \
+    # This includes various dev tools including colcon
+    ros-dev-tools && \
+    # Install rosdeps for extensions that declare a ros_ws in
+    # their extension.toml
+    ${DOCKER_ISAACLAB_PATH}/isaaclab.sh -p ${DOCKER_ISAACLAB_PATH}/tools/install_deps.py rosdep ${DOCKER_ISAACLAB_PATH}/source/extensions && \
+    apt -y autoremove && apt clean autoclean && \
+    rm -rf /var/lib/apt/lists/* && \
+    # Add sourcing of setup.bash to .bashrc
+    echo "source /opt/ros/humble/setup.bash" >> ${HOME}/.bashrc
 
 # Copy the RMW specifications for ROS2
 # https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_ros.html#enabling-the-ros-bridge-extension
@@ -149,4 +136,5 @@ ARG DOCKER_USER_HOME
 # Please make sure to re-declare any args which you require
 # from previous stages, ie ARG DOCKER_ISAACLAB_PATH if you need DOCKER_ISAACLAB_PATH from base
 ARG CUSTOM_MESSAGE
-RUN echo ${CUSTOM_MESSAGE}
+RUN echo ${CUSTOM_MESSAGE} && \
+    touch ${DOCKER_ISAACLAB_PATH}/TEST_FILE

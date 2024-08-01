@@ -77,29 +77,17 @@ class IsaacLabContainerInterface:
             yamls: A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs: A list of envs to extend .env.base. They will be extended in the order they are provided.
         """
-        # stage_dep_dict = self.parse_dockerfile()
+        stage_dep_dict = self.parse_dockerfile()
         # self.yamls = [self.compose_cfgs.joinpath("isaac-lab/isaac-lab.yaml")]
-        self.yamls = [f"{self.target}.yaml"]
+        self.yamls = []
         self.env_files = []
 
-        # if self.dev_volumes:
-        #     self.yamls += ["dev-volumes.yaml"]
-        # if self.workstation_volumes:
-        #     self.yamls += ["workstation-volumes.yaml"]
-        # self.yamls = ["base.yaml"]
-        # self.env_files = [".env.base"]
         # Determine if there is a chain of stage dependencies
-        # from this stage, otherwise it's referencing a different Dockerfile
-        # if self.target in stage_dep_dict.keys():
-        #     for stage in stage_dep_dict[self.target]:
-        #         self.yamls += [f"{stage}.yaml"]
-        #         self.env_files += [f".env.{stage}"]
-
-                # if stage != "base":
-                # if os.path.isfile(os.path.join(self.dir, f"{stage}.yaml")):
-                # self.yamls += [f"{stage}.yaml"]
-                # if os.path.isfile(os.path.join(self.dir, f".env.{stage}")):
-                # self.env_files += [f".env.{stage}"]
+        # from this stage, and load that chain into self.yamls and self.env_files
+        if self.target in stage_dep_dict.keys():
+            for stage in stage_dep_dict[self.target]:
+                self.yamls += [f"{stage}.yaml"]
+                self.env_files += [f".env.{stage}"]
 
         if yamls is not None:
             self.yamls += yamls
@@ -116,13 +104,11 @@ class IsaacLabContainerInterface:
         hint = None
         if file.endswith(".yaml"):
             hint, _ = file.split(".")
-        elif file.startswith(".env"):
-            env_tup = file.split(".")
-            # If the .env file had a follow (.env.followup).
-            # extract and use it as a search hint
-            if len(env_tup) == 3:
-                _, _, hint = env_tup
-        
+
+        if file.endswith(".env"):
+            # Assume a .env will be of the form .<hint>.env
+            _, _, hint = file.split(".")
+
         if not hint is None:
             hint_path = os.path.join(self.compose_cfgs, f"{hint}", file)
             if os.path.isfile(hint_path):

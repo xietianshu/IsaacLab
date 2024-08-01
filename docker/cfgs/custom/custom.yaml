@@ -1,10 +1,6 @@
-# This service adds a custom
-# installation on top of the ros2 image
+# Snippet, meant to be merged with base.yaml
 services:
   isaac-lab:
-    extends:
-        file: ../ros2/ros2.yaml
-        service: isaac-lab
     build:
       args:
-        - CUSTOM_MESSAGE="Hello world!"
+        - CUSTOM_MESSAGE=${CUSTOM_MESSAGE}

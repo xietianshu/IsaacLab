@@ -6,19 +6,19 @@ services:
       context: ../../..
       dockerfile: docker/Dockerfile
       args:
-        - ISAACSIM_VERSION=${ISAACSIM_VERSION}
-        - ISAACSIM_ROOT_PATH=${ISAACSIM_ROOT_PATH}
-        - DOCKER_ISAACLAB_PATH=${DOCKER_ISAACLAB_PATH}
-        - DOCKER_USER_HOME=${DOCKER_USER_HOME}
+        ISAACSIM_VERSION: ${ISAACSIM_VERSION}
+        ISAACSIM_ROOT_PATH: ${DOCKER_ISAACSIM_ROOT_PATH}
+        DOCKER_ISAACLAB_PATH: ${DOCKER_ISAACLAB_PATH}
+        DOCKER_USER_HOME: ${DOCKER_USER_HOME}
     image: isaac-lab-${TARGET}
     container_name: isaac-lab-${TARGET}
-    env_file:
-      - .env
     environment:
       - OMNI_KIT_ALLOW_ROOT=1
       - ACCEPT_EULA=Y
+      - LANG=C.UTF-8
+      - DEBIAN_FRONTEND=noninteractive
       - ISAACSIM_PATH=${DOCKER_ISAACLAB_PATH}/_isaac_sim
-      - ISAACSIM_ROOT_PATH=${ISAACSIM_ROOT_PATH}
+      - ISAACSIM_ROOT_PATH=${DOCKER_ISAACSIM_ROOT_PATH}
       - ISAACLAB_PATH=${DOCKER_ISAACLAB_PATH}
       - DOCKER_USER_HOME=${DOCKER_USER_HOME}
       - ISAACSIM_VERSION=${ISAACSIM_VERSION}
@@ -39,7 +39,7 @@ services:
       # https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/install_faq.html#save-isaac-sim-configs-on-local-disk
       - type: volume
         source: isaac-cache-kit
-        target: ${ISAACSIM_ROOT_PATH}/kit/cache
+        target: ${DOCKER_ISAACSIM_ROOT_PATH}/kit/cache
       - type: volume
         source: isaac-cache-ov
         target: ${DOCKER_USER_HOME}/.cache/ov
@@ -57,7 +57,7 @@ services:
         target: ${DOCKER_USER_HOME}/.nvidia-omniverse/logs
       - type: volume
         source: isaac-carb-logs
-        target: ${ISAACSIM_ROOT_PATH}/kit/logs/Kit/Isaac-Sim
+        target: ${DOCKER_ISAACSIM_ROOT_PATH}/kit/logs/Kit/Isaac-Sim
       - type: volume
         source: isaac-data
         target: ${DOCKER_USER_HOME}/.local/share/ov/data
