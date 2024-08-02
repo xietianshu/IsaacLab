@@ -15,17 +15,6 @@ from utils.statefile import Statefile
 class IsaacLabContainerInterface:
     """
     Interface for managing Isaac Lab containers.
-
-    Attributes:
-        context_dir: The context directory for Docker operations, where the necessary YAML/.env/Dockerfiles files are located.
-        target: The targeted stage for the container. Defaults to "base".
-        statefile: An instance of the Statefile class to manage state variables.
-        container_name: The name of the container.
-        image_name: The name of the image.
-        add_yamls: YAML files to be included in the Docker compose command.
-        add_env_files: Environment files to be included in the Docker compose command.
-        dot_vars: Dictionary of environment variables loaded from .env files.
-        environ: Dictionary of environment variables for subprocesses.
     """
 
     def __init__(
@@ -36,17 +25,19 @@ class IsaacLabContainerInterface:
         yamls: list[str] | None = None,
         envs: list[str] | None = None,
         isaacsim_volumes: bool = True,
-        isaaclab_volumes: bool = True
+        isaaclab_volumes: bool = True,
     ):
         """
         Initialize the IsaacLabContainerInterface with the given parameters.
 
-        Args:IsaacSim
+        Args:
             context_dir : The directory for Docker operations.
             statefile : An instance of the Statefile class to manage state variables. If not provided, initializes a Statefile(path=self.dir/.container.yaml).
-            profile : The profile name for the container. Defaults to "base".
+            target : The target name for the container. Defaults to "base".
             yamls : A list of yamls to extend docker-compose.yaml. They will be extended in the order they are provided.
             envs : A list of envs to extend .env.base. They will be extended in the order they are provided.
+            isaacsim_volumes: Whether to inject the isaacsim volumes into the compose network, defined in IsaacLab/docker/cfgs/isaacsim_volumes.yaml. Defaults to True."
+            isaaclab_volumes: Whether to inject the isaaclab volumes into the compose network, defined in IsaacLab/docker/cfgs/isaaclab_volumes.yaml. Defaults to True."
         """
         self.dir = dir
         self.compose_cfgs = Path(self.dir / "cfgs")
@@ -69,24 +60,27 @@ class IsaacLabContainerInterface:
         self.resolve_compose_cfg(yamls, envs, isaacsim_volumes, isaaclab_volumes)
         self.load_dot_vars()
 
-    def resolve_compose_cfg(self, yamls: list[str] | None = None, envs: list[str] | None = None, isaacsim_volumes: bool = True, isaaclab_volumes: bool = True):
+    def resolve_compose_cfg(
+        self,
+        yamls: list[str] | None = None,
+        envs: list[str] | None = None,
+        isaacsim_volumes: bool = True,
+        isaaclab_volumes: bool = True,
+    ):
         """
         Resolve the compose configuration by setting up YAML files and environment files for the Docker compose command.
 
         Args:
             yamls: A list of yamls to extend base.yaml. They will be extended in the order they are provided.
             envs: A list of envs to extend .env.base. They will be extended in the order they are provided.
+            isaacsim_volumes: Whether to inject the isaacsim volumes into the compose network. Defaults to True.
+            isaaclab_volumes: Whether to inject the isaaclab volumes into the compose network. Defaults to True.
         """
         self.yamls = []
         # Search cfgs for the 'target.yaml'. However, if it does not exist
         # there let it be supplied as an abs path by --files args
         if self.search_compose_cfgs(f"{self.target}.yaml", required=False):
             self.yamls.append(f"{self.target}.yaml")
-
-        if isaacsim_volumes:
-            self.yamls.append("isaacsim_volumes.yaml")
-        if isaaclab_volumes:
-            self.yamls.append("isaaclab_volumes.yaml")
 
         self.env_files = []
         root_env = Path(self.dir / ".env")
@@ -99,6 +93,11 @@ class IsaacLabContainerInterface:
 
         if envs is not None:
             self.env_files += envs
+
+        if isaacsim_volumes:
+            self.yamls.append("isaacsim_volumes.yaml")
+        if isaaclab_volumes:
+            self.yamls.append("isaaclab_volumes.yaml")
 
     @property
     def dot_vars(self):
@@ -158,24 +157,6 @@ class IsaacLabContainerInterface:
             check=False,
         ).stdout.strip()
         return status == "running"
-    
-    # def does_container_exist(self) -> bool:
-    #     """
-    #     Check if a container with self.container_name already exists.
-    #     Useful to avoid name collisions.
-
-    #     If the container does not exist, return False.
-
-    #     Returns:
-    #         bool: True if the container exists, False otherwise.
-    #     """
-    #     status = subprocess.run(
-    #         ["docker", "container", "inspect",  "-f", "{{.Config.Image}}", self.container_name],
-    #         capture_output=True,
-    #         text=True,
-    #         check=False,
-    #     ).stdout.strip()
-    #     return status != f"{self.image_name}"
 
     def does_image_exist(self) -> bool:
         """
@@ -196,11 +177,12 @@ class IsaacLabContainerInterface:
         Build and start the Docker container using the Docker compose 'up' command.
         """
         print(f"[INFO] Building the docker image and starting the container {self.container_name} in the background...")
-        print(["docker", "compose"]
+        print(
+            ["docker", "compose"]
             + self.add_yamls()
             + self.add_env_files()
             + ["up", "--detach", "--build", "--remove-orphans"]
-            )
+        )
         subprocess.run(
             ["docker", "compose"]
             + self.add_yamls()
@@ -325,14 +307,16 @@ class IsaacLabContainerInterface:
             env=self.environ,
         )
 
-    def search_compose_cfgs(self, file, required=True):
-        # Return if path to file is 
+    def search_compose_cfgs(self, file, required=True) -> Path | None:
+        # Return if path to file is
         # absolute and file exists
         if os.path.isabs(file):
             if os.path.isfile(file):
                 return file
             if required:
-                raise FileNotFoundError("The absolute path to required file {file} was passed, but the file does not exist")
+                raise FileNotFoundError(
+                    "The absolute path to required file {file} was passed, but the file does not exist"
+                )
 
         # Brute force search self.compose_cfgs if the hint path failed
         for root, _, files in os.walk(self.compose_cfgs):
@@ -340,6 +324,7 @@ class IsaacLabContainerInterface:
                 return os.path.abspath(os.path.join(root, file))
 
         if required:
-            raise FileNotFoundError(f"Couldn't find required {file} under the compose_cfgs directory {self.compose_cfgs}")
-        else:
-            return None
+            raise FileNotFoundError(
+                f"Couldn't find required {file} under the compose_cfgs directory {self.compose_cfgs}"
+            )
+        return None

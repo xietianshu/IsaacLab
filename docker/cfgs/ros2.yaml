@@ -1,4 +1,4 @@
-# Extension of base.yaml to support the 'ros2' stage of the Dockerfile
+# Extension of base.yaml to support the 'ros2' stage of the IsaacLab/docker/Dockerfile
 services:
   isaac-lab:
     extends:

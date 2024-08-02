@@ -1,3 +1,6 @@
+# docker-compose.yaml to support the 'base' stage of the IsaacLab/docker/Dockerfile.
+# Envars interpolated here are naively defined in /IsaacLab/docker/.env
+# except for TARGET which is provided at buildtime.
 services:
   # This service is the base Isaac Lab image
   isaac-lab:
@@ -6,17 +9,26 @@ services:
       context: ../..
       dockerfile: docker/Dockerfile
       args:
+        # NVIDIA Isaac Sim version to use
         ISAACSIM_VERSION: ${ISAACSIM_VERSION}
+        # Derived from the default path in the NVIDIA provided Isaac Sim container
         ISAACSIM_ROOT_PATH: ${DOCKER_ISAACSIM_ROOT_PATH}
+        # The Isaac Lab path in the container
         ISAACLAB_PATH: ${DOCKER_ISAACLAB_PATH}
+        # Docker user directory - by default this is the root user's home directory
         USER_HOME: ${DOCKER_USER_HOME}
     image: isaac-lab-${TARGET}
     container_name: isaac-lab-${TARGET}
     environment:
+        # Allows use of kit executables by root in the container
       - OMNI_KIT_ALLOW_ROOT=1
+        # Agreement to NVIDIA's EULA is required to use the IsaacLab container
       - ACCEPT_EULA=Y
+        # Set locale
       - LANG=C.UTF-8
+        # Allows installation without shell interactivity
       - DEBIAN_FRONTEND=noninteractive
+        # Envars derived from interpolated docker/.env vars for use in the container
       - ISAACSIM_PATH=${DOCKER_ISAACLAB_PATH}/_isaac_sim
       - ISAACSIM_ROOT_PATH=${DOCKER_ISAACSIM_ROOT_PATH}
       - ISAACLAB_PATH=${DOCKER_ISAACLAB_PATH}

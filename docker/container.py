@@ -40,11 +40,22 @@ def main():
             " .env.base in the order in which they are provided."
         ),
     )
-    parent_parser.add_argument("--no-isaacsim-volumes", action="store_true", help="Do not attach the isaacsim volumes to the compose network. These are defined in "
-                       "IsaacLab/docker/cfgs/isaacsim_volumes.yaml.")
-    parent_parser.add_argument("--no-isaaclab-volumes", action="store_true", help="Do not attach the isaaclab volumes to the compose network. These are defined in "
-                       "IsaacLab/docker/cfgs/isaaclab_volumes.yaml")
-
+    parent_parser.add_argument(
+        "--no-isaacsim-volumes",
+        action="store_true",
+        help=(
+            "Do not attach the isaacsim volumes to the compose network. These are defined in "
+            "IsaacLab/docker/cfgs/isaacsim_volumes.yaml."
+        ),
+    )
+    parent_parser.add_argument(
+        "--no-isaaclab-volumes",
+        action="store_true",
+        help=(
+            "Do not attach the isaaclab volumes to the compose network. These are defined in "
+            "IsaacLab/docker/cfgs/isaaclab_volumes.yaml"
+        ),
+    )
 
     # Actual command definition begins here
     subparsers.add_parser(
@@ -83,7 +94,12 @@ def main():
 
     # Creating container interface
     ci = IsaacLabContainerInterface(
-        dir=Path(__file__).resolve().parent, target=args.target, yamls=args.files, envs=args.env_files, isaacsim_volumes=not args.no_isaacsim_volumes, isaaclab_volumes=not args.no_isaaclab_volumes
+        dir=Path(__file__).resolve().parent,
+        target=args.target,
+        yamls=args.files,
+        envs=args.env_files,
+        isaacsim_volumes=not args.no_isaacsim_volumes,
+        isaaclab_volumes=not args.no_isaaclab_volumes,
     )
 
     print(f"[INFO] Using container target: {ci.target}")

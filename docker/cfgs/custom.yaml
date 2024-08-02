@@ -1,4 +1,4 @@
-# Extension of ros2.yaml to support the 'custom' stage of the Dockerfile
+# Extension of ros2.yaml to support the 'custom' stage of the IsaacLab/docker/Dockerfile
 services:
   isaac-lab:
     extends:
@@ -6,4 +6,6 @@ services:
       service: isaac-lab
     build:
       args:
+        # Arg to demonstrate how users can provide
+        # custom Dockerfile stages with custom ARGs
         - CUSTOM_MESSAGE="Hello world!"
