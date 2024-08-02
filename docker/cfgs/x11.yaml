@@ -1,4 +1,4 @@
-# Snippet, meant to be merged
+# Snippet, meant to be merged at runtime
 services:
   isaac-lab:
     environment:

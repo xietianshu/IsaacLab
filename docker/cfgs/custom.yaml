@@ -1,0 +1,9 @@
+# Snippet, meant to be merged with base.yaml
+services:
+  isaac-lab:
+    extends:
+      file: ros2.yaml
+      service: isaac-lab
+    build:
+      args:
+        - CUSTOM_MESSAGE="Hello world!"

@@ -1,6 +1,0 @@
-# Snippet, meant to be merged with base.yaml
-services:
-  isaac-lab:
-    build:
-      args:
-        - CUSTOM_MESSAGE=${CUSTOM_MESSAGE}

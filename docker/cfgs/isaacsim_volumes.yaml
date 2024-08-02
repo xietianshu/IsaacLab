@@ -1,0 +1,46 @@
+# IsaacSim volumes
+# Injected at runtime to allow
+# extension architecture to share them
+services:
+  isaac-lab:
+    volumes:
+    # These volumes follow from this page
+    # https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/install_faq.html#save-isaac-sim-configs-on-local-disk
+    - type: volume
+      source: isaac-cache-kit
+      target: ${DOCKER_ISAACSIM_ROOT_PATH}/kit/cache
+    - type: volume
+      source: isaac-cache-ov
+      target: ${DOCKER_USER_HOME}/.cache/ov
+    - type: volume
+      source: isaac-cache-pip
+      target: ${DOCKER_USER_HOME}/.cache/pip
+    - type: volume
+      source: isaac-cache-gl
+      target: ${DOCKER_USER_HOME}/.cache/nvidia/GLCache
+    - type: volume
+      source: isaac-cache-compute
+      target: ${DOCKER_USER_HOME}/.nv/ComputeCache
+    - type: volume
+      source: isaac-logs
+      target: ${DOCKER_USER_HOME}/.nvidia-omniverse/logs
+    - type: volume
+      source: isaac-carb-logs
+      target: ${DOCKER_ISAACSIM_ROOT_PATH}/kit/logs/Kit/Isaac-Sim
+    - type: volume
+      source: isaac-data
+      target: ${DOCKER_USER_HOME}/.local/share/ov/data
+    - type: volume
+      source: isaac-docs
+      target: ${DOCKER_USER_HOME}/Documents
+      
+volumes:
+  isaac-cache-kit:
+  isaac-cache-ov:
+  isaac-cache-pip:
+  isaac-cache-gl:
+  isaac-cache-compute:
+  isaac-logs:
+  isaac-carb-logs:
+  isaac-data:
+  isaac-docs:

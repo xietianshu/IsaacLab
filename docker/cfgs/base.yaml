@@ -1,0 +1,36 @@
+services:
+  # This service is the base Isaac Lab image
+  isaac-lab:
+    build:
+      target: ${TARGET}
+      context: ../..
+      dockerfile: docker/Dockerfile
+      args:
+        ISAACSIM_VERSION: ${ISAACSIM_VERSION}
+        ISAACSIM_ROOT_PATH: ${DOCKER_ISAACSIM_ROOT_PATH}
+        ISAACLAB_PATH: ${DOCKER_ISAACLAB_PATH}
+        USER_HOME: ${DOCKER_USER_HOME}
+    image: isaac-lab-${TARGET}
+    container_name: isaac-lab-${TARGET}
+    environment:
+      - OMNI_KIT_ALLOW_ROOT=1
+      - ACCEPT_EULA=Y
+      - LANG=C.UTF-8
+      - DEBIAN_FRONTEND=noninteractive
+      - ISAACSIM_PATH=${DOCKER_ISAACLAB_PATH}/_isaac_sim
+      - ISAACSIM_ROOT_PATH=${DOCKER_ISAACSIM_ROOT_PATH}
+      - ISAACLAB_PATH=${DOCKER_ISAACLAB_PATH}
+      - USER_HOME=${DOCKER_USER_HOME}
+      - ISAACSIM_VERSION=${ISAACSIM_VERSION}
+    network_mode: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    # This is the entrypoint for the container
+    entrypoint: bash
+    stdin_open: true
+    tty: true
