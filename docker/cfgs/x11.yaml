@@ -1,4 +1,5 @@
-# Snippet, meant to be merged at runtime
+# X11 Forwarding
+# Optionally injected at runtime to allow x11 forwarding from within the container
 services:
   isaac-lab:
     environment:

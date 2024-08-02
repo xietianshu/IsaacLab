@@ -1,6 +1,5 @@
 # IsaacSim volumes
-# Injected at runtime to allow
-# extension architecture to share them
+# Optionally injected at runtime to allow extension architecture to share them
 services:
   isaac-lab:
     volumes:
@@ -33,7 +32,7 @@ services:
     - type: volume
       source: isaac-docs
       target: ${DOCKER_USER_HOME}/Documents
-      
+
 volumes:
   isaac-cache-kit:
   isaac-cache-ov:

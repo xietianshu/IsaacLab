@@ -1,4 +1,4 @@
-# Snippet, meant to be merged with base.yaml
+# Extension of ros2.yaml to support the 'custom' stage of the Dockerfile
 services:
   isaac-lab:
     extends:

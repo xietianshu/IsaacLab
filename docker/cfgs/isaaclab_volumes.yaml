@@ -1,6 +1,5 @@
 # IsaacLab volumes
-# Injected at runtime to allow
-# extension architecture to share them
+# Optionally injected at runtime to allow extension architecture to share them
 services:
   isaac-lab:
     volumes:

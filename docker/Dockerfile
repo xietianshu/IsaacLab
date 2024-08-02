@@ -18,7 +18,6 @@ LABEL version="1.0"
 LABEL description="Dockerfile for building and running the Isaac Lab framework inside Isaac Sim container image."
 
 # Arguments
-# We also make them envars for convenience/.bashrc injection
 # Path to Isaac Sim root folder
 ARG ISAACSIM_ROOT_PATH
 # Path to the Isaac Lab directory
@@ -43,11 +42,11 @@ COPY ../ ${ISAACLAB_PATH}
 # Set up a symbolic link between the installed Isaac Sim root folder and _isaac_sim in the Isaac Lab directory
 RUN ln -sf ${ISAACSIM_ROOT_PATH} ${ISAACLAB_PATH}/_isaac_sim
 
-# # Install apt dependencies for extensions that declare them in their extension.toml
-# RUN --mount=type=cache,target=/var/cache/apt \
-#     ${ISAACLAB_PATH}/isaaclab.sh -p ${ISAACLAB_PATH}/tools/install_deps.py apt ${ISAACLAB_PATH}/source/extensions && \
-#     apt -y autoremove && apt clean autoclean && \
-#     rm -rf /var/lib/apt/lists/*
+# Install apt dependencies for extensions that declare them in their extension.toml
+RUN --mount=type=cache,target=/var/cache/apt \
+    ${ISAACLAB_PATH}/isaaclab.sh -p ${ISAACLAB_PATH}/tools/install_deps.py apt ${ISAACLAB_PATH}/source/extensions && \
+    apt -y autoremove && apt clean autoclean && \
+    rm -rf /var/lib/apt/lists/*
 
 # for singularity usage, have to create the directories that will binded
 RUN mkdir -p ${ISAACSIM_ROOT_PATH}/kit/cache && \
@@ -71,8 +70,8 @@ RUN touch /bin/nvidia-smi && \
 
 # installing Isaac Lab dependencies
 # use pip caching to avoid reinstalling large packages
-# RUN --mount=type=cache,target=${USER_HOME}/.cache/pip \
-#     ${ISAACLAB_PATH}/isaaclab.sh --install
+RUN --mount=type=cache,target=${USER_HOME}/.cache/pip \
+    ${ISAACLAB_PATH}/isaaclab.sh --install
 
 # aliasing isaaclab.sh and python for convenience
 RUN echo "alias isaaclab=${ISAACLAB_PATH}/isaaclab.sh" >> ${HOME}/.bashrc && \
@@ -130,11 +129,10 @@ COPY docker/.ros/ ${USER_HOME}/.ros/
 # If you don't require ros2, you can change the underlying layer to base, ie "FROM base AS custom"
 FROM ros2 AS custom
 
-# Re-using ARGs from previous stage
-ARG ISAACLAB_PATH
-ARG USER_HOME
 # Please make sure to re-declare any args which you require
 # from previous stages, ie ARG ISAACLAB_PATH if you need ISAACLAB_PATH from base
+# Re-using ARG ISAACLAB_PATH
+ARG ISAACLAB_PATH
 ARG CUSTOM_MESSAGE
 RUN echo ${CUSTOM_MESSAGE} && \
     touch ${ISAACLAB_PATH}/TEST_FILE
