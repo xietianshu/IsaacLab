@@ -7,7 +7,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional, Union
 
 from utils.statefile import Statefile
 
@@ -21,9 +21,9 @@ class IsaacLabContainerInterface:
         self,
         dir: Path,
         target: str = "base",
-        statefile: None | Statefile = None,
-        yamls: list[str] | None = None,
-        envs: list[str] | None = None,
+        statefile: Optional[Statefile] = None,
+        yamls: Optional[List[str]] = None,
+        envs: Optional[List[str]] = None,
         isaacsim_volumes: bool = True,
         isaaclab_volumes: bool = True,
     ):
@@ -62,8 +62,8 @@ class IsaacLabContainerInterface:
 
     def resolve_compose_cfg(
         self,
-        yamls: list[str] | None = None,
-        envs: list[str] | None = None,
+        yamls: Optional[List[str]] = None,
+        envs: Optional[List[str]] = None,
         isaacsim_volumes: bool = True,
         isaaclab_volumes: bool = True,
     ):
@@ -111,13 +111,13 @@ class IsaacLabContainerInterface:
         The environment variables are read in order and overwritten if there are name conflicts,
         mimicking the behavior of Docker compose.
         """
-        self._dot_vars: dict[str, Any] = {}
+        self._dot_vars: Dict[str, Any] = {}
         abs_env_files = [self.search_compose_cfgs(file) for file in self.env_files]
         for i in range(len(abs_env_files)):
-            with open(self.dir / abs_env_files[i]) as f:
+            with open(str(self.dir / abs_env_files[i])) as f:
                 self._dot_vars.update(dict(line.strip().split("=", 1) for line in f if "=" in line))
 
-    def add_env_files(self) -> list[str]:
+    def add_env_files(self) -> List[str]:
         """
         Put self.env_files into a state suitable for the docker compose CLI, with '--env-file' between
         every argument
@@ -129,7 +129,7 @@ class IsaacLabContainerInterface:
         abs_env_files = [self.search_compose_cfgs(file) for file in self.env_files]
         return [abs_env_files[int(i / 2)] if i % 2 == 1 else "--env-file" for i in range(len(abs_env_files) * 2)]
 
-    def add_yamls(self) -> list[str]:
+    def add_yamls(self) -> List[str]:
         """
         Put self.yamls into a state suitable for the docker compose CLI, with '--file' between
         every argument
@@ -189,7 +189,7 @@ class IsaacLabContainerInterface:
             + self.add_env_files()
             + ["up", "--detach", "--build", "--remove-orphans"],
             check=False,
-            cwd=self.dir,
+            cwd=str(self.dir),
             env=self.environ,
         )
 
@@ -201,7 +201,7 @@ class IsaacLabContainerInterface:
         subprocess.run(
             ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["build"],
             check=False,
-            cwd=self.dir,
+            cwd=str(self.dir),
             env=self.environ,
         )
 
@@ -238,13 +238,13 @@ class IsaacLabContainerInterface:
             subprocess.run(
                 ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["down"],
                 check=False,
-                cwd=self.dir,
+                cwd=str(self.dir),
                 env=self.environ,
             )
         else:
             raise RuntimeError(f"Can't stop container '{self.container_name}' as it is not running.")
 
-    def copy(self, output_dir: Path | None = None):
+    def copy(self, output_dir: Optional[Path] = None):
         """
         Copy artifacts from the running container to the host machine.
 
@@ -271,7 +271,7 @@ class IsaacLabContainerInterface:
             for container_path, host_path in artifacts.items():
                 print(f"\t -{container_path} -> {host_path}")
             for path in artifacts.values():
-                shutil.rmtree(path, ignore_errors=True)
+                shutil.rmtree(str(path), ignore_errors=True)
             for container_path, host_path in artifacts.items():
                 subprocess.run(
                     [
@@ -286,7 +286,7 @@ class IsaacLabContainerInterface:
         else:
             raise RuntimeError(f"The container '{self.container_name}' is not running")
 
-    def config(self, output_yaml: Path | None = None):
+    def config(self, output_yaml: Optional[Path] = None):
         """
         Generate a docker-compose.yaml from the passed yamls, .envs, and either print to the
         terminal or create a yaml at output_yaml
@@ -297,22 +297,22 @@ class IsaacLabContainerInterface:
         """
         print("[INFO] Configuring the passed options into a yaml...")
         if output_yaml is not None:
-            output = ["--output", output_yaml]
+            output = ["--output", str(output_yaml)]
         else:
             output = []
         subprocess.run(
             ["docker", "compose"] + self.add_yamls() + self.add_env_files() + ["config"] + output,
             check=False,
-            cwd=self.dir,
+            cwd=str(self.dir),
             env=self.environ,
         )
 
-    def search_compose_cfgs(self, file, required=True) -> Path | None:
+    def search_compose_cfgs(self, file, required=True) -> Union[Path, None]:
         # Return if path to file is
         # absolute and file exists
         if os.path.isabs(file):
             if os.path.isfile(file):
-                return file
+                return Path(file)
             if required:
                 raise FileNotFoundError(
                     "The absolute path to required file {file} was passed, but the file does not exist"
@@ -321,7 +321,7 @@ class IsaacLabContainerInterface:
         # Brute force search self.compose_cfgs if the hint path failed
         for root, _, files in os.walk(self.compose_cfgs):
             if file in files:
-                return os.path.abspath(os.path.join(root, file))
+                return Path(os.path.abspath(os.path.join(root, file)))
 
         if required:
             raise FileNotFoundError(

@@ -7,13 +7,14 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
 from utils.statefile import Statefile
 
 
 # This method of x11 enabling forwarding was inspired by osrf/rocker
 # https://github.com/osrf/rocker
-def configure_x11(statefile: Statefile) -> dict[str, str]:
+def configure_x11(statefile: Statefile) -> Dict[str, str]:
     """
     Configure X11 forwarding by creating and managing a temporary .xauth file.
 
@@ -42,7 +43,7 @@ def configure_x11(statefile: Statefile) -> dict[str, str]:
     return {"__ISAACLAB_TMP_XAUTH": str(__ISAACLAB_TMP_XAUTH), "__ISAACLAB_TMP_DIR": str(__ISAACLAB_TMP_DIR)}
 
 
-def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | None:
+def x11_check(statefile: Statefile) -> Optional[Tuple[List[str], Dict[str, str]]]:
     """
     Check and configure X11 forwarding based on user input and existing state.
 
@@ -53,8 +54,8 @@ def x11_check(statefile: Statefile) -> tuple[list[str], dict[str, str]] | None:
         statefile: An instance of the Statefile class to manage state variables.
 
     Returns:
-        list or str: A list containing the x11.yaml file configuration option if X11 forwarding is enabled,
-                     otherwise None
+        Optional[Tuple[List[str], Dict[str, str]]]: A tuple containing the x11.yaml file configuration option and
+                                                    environment variables if X11 forwarding is enabled, otherwise None
     """
     statefile.namespace = "X11"
     __ISAACLAB_X11_FORWARDING_ENABLED = statefile.load_variable("__ISAACLAB_X11_FORWARDING_ENABLED")
@@ -106,7 +107,7 @@ def x11_cleanup(statefile: Statefile):
         statefile.delete_variable("__ISAACLAB_TMP_XAUTH")
 
 
-def create_x11_tmpfile(tmpfile: Path | None = None, tmpdir: Path | None = None) -> Path:
+def create_x11_tmpfile(tmpfile: Optional[Path] = None, tmpdir: Optional[Path] = None) -> Path:
     """
     Creates an .xauth file with an MIT-MAGIC-COOKIE derived from the current DISPLAY,
     returns its location as a Path.
@@ -136,7 +137,7 @@ def create_x11_tmpfile(tmpfile: Path | None = None, tmpdir: Path | None = None) 
         ["xauth", "nlist", os.environ["DISPLAY"]], capture_output=True, text=True, check=True
     ).stdout.replace("ffff", "")
     # Merge the new cookie into the create .tmp file
-    subprocess.run(["xauth", "-f", tmp_xauth, "nmerge", "-"], input=xauth_cookie, text=True, check=True)
+    subprocess.run(["xauth", "-f", str(tmp_xauth), "nmerge", "-"], input=xauth_cookie, text=True, check=True)
     return tmp_xauth
 
 
