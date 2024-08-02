@@ -111,7 +111,7 @@ class IsaacLabContainerInterface:
         The environment variables are read in order and overwritten if there are name conflicts,
         mimicking the behavior of Docker compose.
         """
-        self._dot_vars: Dict[str, Any] = {}
+        self._dot_vars: dict[str, Any] = {}
         abs_env_files = [self.search_compose_cfgs(file) for file in self.env_files]
         for i in range(len(abs_env_files)):
             with open(str(self.dir / abs_env_files[i])) as f:
@@ -177,12 +177,6 @@ class IsaacLabContainerInterface:
         Build and start the Docker container using the Docker compose 'up' command.
         """
         print(f"[INFO] Building the docker image and starting the container {self.container_name} in the background...")
-        print(
-            ["docker", "compose"]
-            + self.add_yamls()
-            + self.add_env_files()
-            + ["up", "--detach", "--build", "--remove-orphans"]
-        )
         subprocess.run(
             ["docker", "compose"]
             + self.add_yamls()
@@ -307,7 +301,18 @@ class IsaacLabContainerInterface:
             env=self.environ,
         )
 
-    def search_compose_cfgs(self, file, required=True) -> Union[Path, None]:
+    def search_compose_cfgs(self, file: Path, required: bool = True) -> Union[Path, None]:
+        """
+        Search the self.compose_cfgs directory for 'file'. If required=True and 
+        the file is not found, throw an error. Does nothing if the file is absolute.
+
+        Args:
+            file: File to search for
+            required: Whether to throw an error if the file is not found
+
+        Raises:
+            FileNotFoundError: If the file is not found
+        """
         # Return if path to file is
         # absolute and file exists
         if os.path.isabs(file):
