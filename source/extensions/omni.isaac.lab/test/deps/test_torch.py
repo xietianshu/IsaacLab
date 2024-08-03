@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
 import torch
 import torch.utils.benchmark as benchmark
 import unittest
@@ -148,6 +149,31 @@ class TestTorchOperations(unittest.TestCase):
         output_bitwise_or = my_tensor_1 | my_tensor_2
 
         self.assertTrue(torch.allclose(output_logical_or, output_bitwise_or))
+
+    def test_nonzero(self):
+        """Test non-zero operation."""
+
+        for size in [16000, 1]:
+            for device in ["cuda:0", "cpu"]:
+                with torch.inference_mode():
+                    # create a random tensor
+                    my_tensor = torch.rand(size, device=device) > 0.5
+
+                    # check the speed of non-zero operation on torch
+                    timer_nonzero = benchmark.Timer(
+                        stmt="torch.nonzero(my_tensor)", globals={"my_tensor": my_tensor}
+                    )
+                    time_value = timer_nonzero.blocked_autorange().median
+                    # time_value = timer_nonzero.timeit(number=1000).median
+                    print(f"\nTime for non-zero ({device}, torch) for size ({size}):", time_value / 1e-6, "us")
+
+                    # check the speed of non-zero operation on numpy
+                    timer_nonzero = benchmark.Timer(
+                        stmt="np.nonzero(my_tensor)", globals={"my_tensor": my_tensor.to("cpu").numpy(), "np": np}
+                    )
+                    time_value = timer_nonzero.blocked_autorange().median
+                    # time_value = timer_nonzero.timeit(number=1000).median
+                    print(f"Time for non-zero (numpy) for size ({size}):", time_value / 1e-6, "us")
 
 
 if __name__ == "__main__":
