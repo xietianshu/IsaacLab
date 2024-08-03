@@ -153,7 +153,7 @@ class TestTorchOperations(unittest.TestCase):
     def test_nonzero(self):
         """Test non-zero operation."""
 
-        for size in [16000, 8000, 4000, 2000, 1]:
+        for size in [48000, 16000, 8000, 4000, 2000, 1]:
             # pretty print structure
             print("\n Size of the tensor:", size)
 
