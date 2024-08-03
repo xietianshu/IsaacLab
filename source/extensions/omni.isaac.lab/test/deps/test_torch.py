@@ -153,27 +153,37 @@ class TestTorchOperations(unittest.TestCase):
     def test_nonzero(self):
         """Test non-zero operation."""
 
-        for size in [16000, 1]:
-            for device in ["cuda:0", "cpu"]:
-                with torch.inference_mode():
-                    # create a random tensor
-                    my_tensor = torch.rand(size, device=device) > 0.5
+        for size in [16000, 8000, 4000, 2000, 1]:
+            # pretty print structure
+            print("\n Size of the tensor:", size)
 
-                    # check the speed of non-zero operation on torch
-                    timer_nonzero = benchmark.Timer(
-                        stmt="torch.nonzero(my_tensor)", globals={"my_tensor": my_tensor}
-                    )
-                    time_value = timer_nonzero.blocked_autorange().median
-                    # time_value = timer_nonzero.timeit(number=1000).median
-                    print(f"\nTime for non-zero ({device}, torch) for size ({size}):", time_value / 1e-6, "us")
+            with torch.inference_mode():
+                # create a random tensor
+                my_tensor = torch.rand(size) > 0.5
 
-                    # check the speed of non-zero operation on numpy
-                    timer_nonzero = benchmark.Timer(
-                        stmt="np.nonzero(my_tensor)", globals={"my_tensor": my_tensor.to("cpu").numpy(), "np": np}
-                    )
-                    time_value = timer_nonzero.blocked_autorange().median
-                    # time_value = timer_nonzero.timeit(number=1000).median
-                    print(f"Time for non-zero (numpy) for size ({size}):", time_value / 1e-6, "us")
+                # check the speed of non-zero operation on torch with CPU
+                timer_nonzero = benchmark.Timer(
+                    stmt="torch.nonzero(my_tensor)", globals={"my_tensor": my_tensor.to("cpu")}
+                )
+                time_value = timer_nonzero.blocked_autorange().median
+                # time_value = timer_nonzero.timeit(number=1000).median
+                print("\tTime for non-zero (cpu, torch)\t :", time_value / 1e-6, "us")
+
+                # check the speed of non-zero operation on torch with cuda:0
+                timer_nonzero = benchmark.Timer(
+                    stmt="torch.nonzero(my_tensor)", globals={"my_tensor": my_tensor.to("cuda:0")}
+                )
+                time_value = timer_nonzero.blocked_autorange().median
+                # time_value = timer_nonzero.timeit(number=1000).median
+                print("\tTime for non-zero (cuda:0, torch):", time_value / 1e-6, "us")
+
+                # check the speed of non-zero operation on numpy
+                timer_nonzero = benchmark.Timer(
+                    stmt="np.nonzero(my_tensor)", globals={"my_tensor": my_tensor.to("cpu").numpy(), "np": np}
+                )
+                time_value = timer_nonzero.blocked_autorange().median
+                # time_value = timer_nonzero.timeit(number=1000).median
+                print("\tTime for non-zero (numpy)\t\t :", time_value / 1e-6, "us")
 
 
 if __name__ == "__main__":
