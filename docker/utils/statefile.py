@@ -2,11 +2,12 @@
 # All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 import configparser
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 def load_cfg_file(path: Path) -> ConfigParser:
@@ -23,7 +24,7 @@ def load_cfg_file(path: Path) -> ConfigParser:
         dict: The contents of the config file as a dictionary.
     """
     cfg = ConfigParser()
-    cfg.read(str(path))  # Convert Path to string for Python 3.8 compatibility
+    cfg.read(path)
     return cfg
 
 
@@ -35,7 +36,7 @@ def save_cfg_file(path: Path, cfg: ConfigParser):
         path: The path to the config file.
         data: The data to be saved to the config file.
     """
-    with open(str(path), "w+") as file:  # Convert Path to string for Python 3.8 compatibility
+    with open(path, "w+") as file:
         cfg.write(file)
 
 
@@ -44,7 +45,7 @@ class Statefile:
     A class to manage state variables stored in a cfg file.
     """
 
-    def __init__(self, path: Path, namespace: Optional[str] = None):
+    def __init__(self, path: Path, namespace: str | None = None):
         """
         Initialize the Statefile object with the path to the cfg file.
 
@@ -64,7 +65,7 @@ class Statefile:
         """
         self.save_cfg()
 
-    def set_variable(self, key: str, value: Any, section: Optional[str] = None):
+    def set_variable(self, key: str, value: Any, section: str | None = None):
         """
         Set a variable in the cfg file.
 
@@ -79,9 +80,9 @@ class Statefile:
             section = self.namespace
         if section not in self.loaded_cfg.sections():
             self.loaded_cfg.add_section(section)
-        self.loaded_cfg.set(section, key, str(value))  # Convert value to string for ConfigParser
+        self.loaded_cfg.set(section, key, value)
 
-    def load_variable(self, key: str, section: Optional[str] = None) -> Any:
+    def load_variable(self, key: str, section: str | None = None) -> Any:
         """
         Load a variable from the cfg file.
 
@@ -98,7 +99,7 @@ class Statefile:
             section = self.namespace
         return self.loaded_cfg.get(section, key, fallback=None)
 
-    def delete_variable(self, key: str, section: Optional[str] = None):
+    def delete_variable(self, key: str, section: str | None = None):
         """
         Delete a variable from the cfg file.
 
