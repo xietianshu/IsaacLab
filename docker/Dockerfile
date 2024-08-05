@@ -14,7 +14,7 @@ FROM nvcr.io/nvidia/isaac-sim:${ISAACSIM_VERSION} AS base
 SHELL ["/bin/bash", "-c"]
 
 # Adds labels to the Dockerfile
-LABEL version="1.0"
+LABEL version="1.1"
 LABEL description="Dockerfile for building and running the Isaac Lab framework inside Isaac Sim container image."
 
 # Arguments
