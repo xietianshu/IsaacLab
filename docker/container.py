@@ -77,8 +77,11 @@ def main():
         x11_utils.x11_refresh(ci.statefile)
         ci.enter()
     elif args.command == "copy":
+        print(f"[INFO] Copying artifacts from the 'isaac-lab-{ci.container_name}' container...")
         ci.copy()
+        print("\n[INFO] Finished copying the artifacts from the container.")
     elif args.command == "stop":
+        print(f"[INFO] Stopping the launched docker container {ci.container_name}...")
         ci.stop()
         x11_utils.x11_cleanup(ci.statefile)
     else:
