@@ -122,6 +122,7 @@ def main():
         x11_utils.x11_refresh(ci.statefile)
         ci.enter()
     elif args.command == "stop":
+        print(f"[INFO] Stopping the launched docker container {ci.container_name}...")
         ci.stop()
         x11_utils.x11_cleanup(ci.statefile)
     else:
