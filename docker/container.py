@@ -68,6 +68,17 @@ def main():
         help="Build the docker image.",
         parents=[parent_parser],
     )
+    config = subparsers.add_parser(
+        "config",
+        help=(
+            "Generate a docker-compose.yaml from the passed yamls, .envs, and either print to the terminal or create a"
+            " yaml at output_yaml"
+        ),
+        parents=[parent_parser],
+    )
+    config.add_argument(
+        "--output-yaml", nargs="?", default=None, help="Yaml file to write config output to. Defaults to None."
+    )
     subparsers.add_parser(
         "copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser]
     )
@@ -104,7 +115,6 @@ def main():
 
     print(f"[INFO] Using container target: {ci.target}")
     if args.command == "start":
-        print(f"[INFO] Building the docker image and starting the container {ci.container_name} in the background...")
         x11_outputs = x11_utils.x11_check(ci.statefile)
         if x11_outputs is not None:
             (x11_yaml, x11_envar) = x11_outputs
@@ -118,11 +128,16 @@ def main():
     elif args.command == "copy":
         ci.copy()
     elif args.command == "enter":
-        print(f"[INFO] Entering the existing {ci.container_name} container in a bash session...")
         x11_utils.x11_refresh(ci.statefile)
         ci.enter()
+<<<<<<< HEAD
+=======
+    elif args.command == "config":
+        ci.config(args.output_yaml)
+    elif args.command == "copy":
+        ci.copy()
+>>>>>>> feature/composite_compose
     elif args.command == "stop":
-        print(f"[INFO] Stopping the launched docker container {ci.container_name}...")
         ci.stop()
         x11_utils.x11_cleanup(ci.statefile)
     else:

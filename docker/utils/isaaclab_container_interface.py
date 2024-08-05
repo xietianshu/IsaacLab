@@ -208,6 +208,7 @@ class IsaacLabContainerInterface:
             RuntimeError: If the container is not running.
         """
         if self.is_container_running():
+            print(f"[INFO] Entering the existing {self.container_name} container in a bash session...")
             subprocess.run([
                 "docker",
                 "exec",
