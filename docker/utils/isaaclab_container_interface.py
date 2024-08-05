@@ -250,7 +250,7 @@ class IsaacLabContainerInterface:
             output = []
         subprocess.run(
             ["docker", "compose"] + self.add_yamls + self.add_profiles + self.add_env_files + ["config"] + output,
-            check=True,
+            check=False,
             cwd=self.context_dir,
             env=self.environ,
         )
