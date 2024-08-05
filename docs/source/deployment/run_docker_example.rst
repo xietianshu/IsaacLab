@@ -131,7 +131,7 @@ the build process when we next run ``python container.py start``, we may enter t
 
   docker image rm isaac-lab-base
 
-A subsequent run of ``docker image ls`` will show that the image tagged **isaaclab** is now gone. We can repeat the process for the
+A subsequent run of ``docker image ls`` will show that the image tagged **isaac-lab-base** is now gone. We can repeat the process for the
 underlying NVIDIA container if we wish to free up more space. If a more powerful method of freeing resources from Docker is desired,
 please consult the documentation for the `docker prune`_ commands.
 
