@@ -82,6 +82,9 @@ The following describes the parameters that need to be configured:
 - ``CLUSTER_PYTHON_EXECUTABLE``:
   The path within Isaac Lab to the Python executable that should be executed in the submitted job.
 
+When a ``job`` is submitted, it will also use variables defined in ``docker/.env.base``, though these
+should be correct by default.
+
 Exporting to singularity image
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -97,7 +100,8 @@ To export to a singularity image, execute the following command:
     ./docker/cluster/cluster_interface.sh push [profile]
 
 This command will create a singularity image under ``docker/exports`` directory and
-upload it to the defined location on the cluster. Be aware that creating the singularity
+upload it to the defined location on the cluster. It requires that you have previously
+built the image with the ``container.py`` interface. Be aware that creating the singularity
 image can take a while.
 ``[profile]`` is an optional argument that specifies the container profile to be used. If no profile is
 specified, the default profile ``base`` will be used.
