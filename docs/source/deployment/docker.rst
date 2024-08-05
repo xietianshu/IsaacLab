@@ -119,6 +119,11 @@ The following shows how to launch the container in a detached state and enter it
     # Launch the container in detached mode
     # We don't pass an image extension arg, so it defaults to 'base'
     python docker/container.py start
+
+    # If we want to add .env or .yaml files to customize our compose config,
+    # we can simply specify them in the same manner as the compose cli
+    # python docker/container.py start --file my-compose.yaml --env-file .env.my-vars
+
     # Enter the container
     # We pass 'base' explicitly, but if we hadn't it would default to 'base'
     python docker/container.py enter base
@@ -199,7 +204,7 @@ Isaac Lab Image Extensions
 The produced image depends upon the arguments passed to ``container.py start`` and ``container.py stop``. These
 commands accept an ``image_extension`` as an additional argument. If no argument is passed, then these
 commands default to ``base``. Currently, the only valid ``image_extension`` arguments are (``base``, ``ros2``).
-Only one ``image_extension`` can be passed at a time, and the produced container will be named ``isaaclab``.
+Only one ``image_extension`` can be passed at a time, and the produced container will be named ``isaac-lab-${profile}``.
 
 .. code:: bash
 
