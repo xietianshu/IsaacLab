@@ -106,9 +106,11 @@ or else they will default to image_extension ``base``:
 1. ``start``: This builds the image and brings up the container in detached mode (i.e. in the background).
 2. ``enter``: This begins a new bash process in an existing isaaclab container, and which can be exited
    without bringing down the container.
-3. ``copy``: This copies the ``logs``, ``data_storage`` and ``docs/_build`` artifacts, from the ``isaac-lab-logs``, ``isaac-lab-data`` and ``isaac-lab-docs``
+3. ``config``: This outputs the compose.yaml which would be result from the inputs given to ``container.py start``. This command is useful
+   for debugging a compose configuration.
+4. ``copy``: This copies the ``logs``, ``data_storage`` and ``docs/_build`` artifacts, from the ``isaac-lab-logs``, ``isaac-lab-data`` and ``isaac-lab-docs``
    volumes respectively, to the ``docker/artifacts`` directory. These artifacts persist between docker container instances and are shared between image extensions.
-4. ``stop``: This brings down the container and removes it.
+5. ``stop``: This brings down the container and removes it.
 
 The following shows how to launch the container in a detached state and enter it:
 
@@ -131,7 +133,7 @@ To copy files from the base container to the host machine, you can use the follo
 The script ``container.py`` provides a wrapper around this command to copy the ``logs`` , ``data_storage`` and ``docs/_build``
 directories to the ``docker/artifacts`` directory. This is useful for copying the logs, data and documentation:
 
-.. code::
+.. code:: bash
 
     # stop the container
     python docker/container.py stop
@@ -143,9 +145,9 @@ X11 forwarding
 The container supports X11 forwarding, which allows the user to run GUI applications from the container and display them
 on the host machine.
 
-The first time a container is started with ``./docker/container.sh start``, the script prompts
-the user whether to activate X11 forwarding. This will create a file ``docker/.container.yaml`` to store the user's choice.
-Subsequently, X11 forwarding can be toggled by changing ``__ISAACLAB_X11_FORWARDING_ENABLED`` to 0 or 1 in ``docker/.container.yaml``.
+The first time a container is started with ``python docker/container.py start``, the script prompts
+the user whether to activate X11 forwarding. This will create a file ``docker/.container.cfg`` to store the user's choice.
+Subsequently, X11 forwarding can be toggled by changing ``__ISAACLAB_X11_FORWARDING_ENABLED`` to 0 or 1 in ``docker/.container.cfg``.
 
 
 Python Interpreter
