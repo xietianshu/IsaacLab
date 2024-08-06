@@ -79,6 +79,17 @@ def main():
     config.add_argument(
         "--output-yaml", nargs="?", default=None, help="Yaml file to write config output to. Defaults to None."
     )
+    config = subparsers.add_parser(
+        "config",
+        help=(
+            "Generate a docker-compose.yaml from the passed yamls, .envs, and either print to the terminal or create a"
+            " yaml at output_yaml"
+        ),
+        parents=[parent_parser],
+    )
+    config.add_argument(
+        "--output-yaml", nargs="?", default=None, help="Yaml file to write config output to. Defaults to None."
+    )
     subparsers.add_parser(
         "copy", help="Copy build and logs artifacts from the container to the host machine.", parents=[parent_parser]
     )

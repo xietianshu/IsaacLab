@@ -82,7 +82,11 @@ The following describes the parameters that need to be configured:
 - ``CLUSTER_PYTHON_EXECUTABLE``:
   The path within Isaac Lab to the Python executable that should be executed in the submitted job.
 
+<<<<<<< HEAD
 When a ``job`` is submitted, it will also use variables defined in ``docker/.env``, though these
+=======
+When a ``job`` is submitted, it will also use variables defined in ``docker/.env.base``, though these
+>>>>>>> main
 should be correct by default.
 
 Exporting to singularity image
@@ -97,7 +101,11 @@ To export to a singularity image, execute the following command:
 
 .. code:: bash
 
+<<<<<<< HEAD
     ./docker/cluster/cluster_interface.sh push [target]
+=======
+    ./docker/cluster/cluster_interface.sh push [profile]
+>>>>>>> main
 
 This command will create a singularity image under ``docker/exports`` directory and
 upload it to the defined location on the cluster. It requires that you have previously
@@ -172,7 +180,11 @@ To submit a job on the cluster, the following command can be used:
 
 .. code:: bash
 
+<<<<<<< HEAD
     ./docker/cluster/cluster_interface.sh job [target] "argument1" "argument2" ...
+=======
+    ./docker/cluster/cluster_interface.sh job [profile] "argument1" "argument2" ...
+>>>>>>> main
 
 This command will copy the latest changes in your code to the cluster and submit a job. Please ensure that
 your Python executable's output is stored under ``isaaclab/logs`` as this directory will be copied again

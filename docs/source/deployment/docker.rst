@@ -78,11 +78,16 @@ needed to run Isaac Lab inside a Docker container. A subset of these are summari
   `extend`_ the ``isaac-lab`` service from ``base.yaml`` and do the same for their corresponding stages in the ``Dockerfile``.
 * ``cfgs/isaacsim_volumes.yaml``: Defines several named volumes such as ``isaac-cache-kit`` to
   store frequently re-used resources compiled by Isaac Sim, such as shaders, and to retain logs, data, and documents.
+<<<<<<< HEAD
 * ``cfgs/isaaclab_volumes.yaml``: Defines bind-mounts to allow direct editing of Isaac Lab code from the host machine that runs
   the container, as well as a few volumes for storing logs and data. See ``container.py copy`` for more information on accessing
   this data on the host machine.
 * ``.env``: Stores environment variables which are used directly in the defining the image, or else
   interpolated in the various ``cfg`` yaml files.
+=======
+* ``base.env``: Stores environment variables required for the ``base`` build process and the container itself. ``.env``
+  files which end with something else (i.e. ``.env.ros2``) define these for `image_extension <#isaac-lab-image-extensions>`_.
+>>>>>>> main
 * ``container.py``: A script that interfaces with tools in ``utils`` to configure and build the image,
   and run and interact with the container.
 
@@ -107,6 +112,7 @@ The script ``container.py`` parallels three basic ``docker compose`` commands. E
 or else they will default to image_extension ``base``:
 
 1. ``start``: This builds the image and brings up the container in detached mode (i.e. in the background).
+<<<<<<< HEAD
 2. ``build``: This builds the image but does not bring up the container.
 3. ``config``: This outputs the compose.yaml which would be result from the inputs given to ``python container.py start``. This command is useful
    for debugging a compose configuration.
@@ -115,6 +121,15 @@ or else they will default to image_extension ``base``:
 5. ``enter``: This begins a new bash process in an existing isaaclab container, and which can be exited
    without bringing down the container.
 6. ``stop``: This brings down the container and removes it.
+=======
+2. ``enter``: This begins a new bash process in an existing isaaclab container, and which can be exited
+   without bringing down the container.
+3. ``config``: This outputs the compose.yaml which would be result from the inputs given to ``container.py start``. This command is useful
+   for debugging a compose configuration.
+4. ``copy``: This copies the ``logs``, ``data_storage`` and ``docs/_build`` artifacts, from the ``isaac-lab-logs``, ``isaac-lab-data`` and ``isaac-lab-docs``
+   volumes respectively, to the ``docker/artifacts`` directory. These artifacts persist between docker container instances and are shared between image extensions.
+5. ``stop``: This brings down the container and removes it.
+>>>>>>> main
 
 The following shows how to launch the container in a detached state and enter it:
 
@@ -213,10 +228,16 @@ Isaac Lab Target Stages
 -----------------------
 
 The produced image depends upon the arguments passed to ``container.py start`` and ``container.py stop``. These
+<<<<<<< HEAD
 commands accept a ``target`` as an additional argument, which reflect the `stages`_ within the Dockerfile. If no argument is passed, then these
 commands default to ``base``. Currently, the only valid ``target`` arguments are (``base``, ``ros2``, ``custom``). ``cfgs/custom.yaml`` and
 the ``custom`` Dockerfile stage are intended  to act as a template to demonstrate how one could add their own Dockerfile stage and use it
 with the ``IsaacLabContainerInterface``. Only one ``target`` can be passed at a time, and the produced container will be named ``isaac-lab-${target}``.
+=======
+commands accept an ``image_extension`` as an additional argument. If no argument is passed, then these
+commands default to ``base``. Currently, the only valid ``image_extension`` arguments are (``base``, ``ros2``).
+Only one ``image_extension`` can be passed at a time, and the produced container will be named ``isaac-lab-${profile}``.
+>>>>>>> main
 
 .. code:: bash
 
