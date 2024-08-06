@@ -27,7 +27,7 @@ extract_isaacsim_path() {
     # Use the sym-link path to Isaac Sim directory
     local isaac_path=${ISAACLAB_PATH}/_isaac_sim
     # If above path is not available, try to find the path using python
-    if [ ! -L "${isaac_path}" ]; then
+    if [ ! -d "${isaac_path}" ]; then
         # Use the python executable to get the path
         local python_exe=$(extract_python_exe)
         # Retrieve the path importing isaac sim and getting the environment path
