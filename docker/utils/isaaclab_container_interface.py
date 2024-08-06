@@ -325,7 +325,7 @@ class IsaacLabContainerInterface:
                     "The absolute path to required file {file} was passed, but the file does not exist"
                 )
 
-        # Brute force search self.compose_cfgs if the hint path failed
+        # Brute force search self.compose_cfgs
         for root, _, files in os.walk(self.compose_cfgs):
             if file in files:
                 return os.path.abspath(os.path.join(root, file))
