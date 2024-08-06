@@ -31,7 +31,6 @@ services:
         target: ${DOCKER_ISAACLAB_PATH}/data_storage
 
 volumes:
-  # isaac-lab
   isaac-lab-docs:
   isaac-lab-logs:
   isaac-lab-data:
