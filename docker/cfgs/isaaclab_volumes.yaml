@@ -1,4 +1,8 @@
 # IsaacLab volumes
+# Defines bind-mounts to allow direct editing of Isaac Lab code from the host machine
+# that runs the container, as well as a few volumes for storing logs and data.
+# See ``container.py copy`` for more information on accessing this data on the host machine.
+
 # Optionally injected at runtime to allow extension architecture to share them
 services:
   isaac-lab:

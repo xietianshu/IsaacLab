@@ -1,4 +1,7 @@
 # IsaacSim volumes
+# Defines several named volumes such as ``isaac-cache-kit`` to store frequently re-used resources
+# created by Isaac Sim, such as shaders, and to retain logs, data, and documents.
+
 # Optionally injected at runtime to allow extension architecture to share them
 services:
   isaac-lab:
