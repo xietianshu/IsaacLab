@@ -82,7 +82,7 @@ The following describes the parameters that need to be configured:
 - ``CLUSTER_PYTHON_EXECUTABLE``:
   The path within Isaac Lab to the Python executable that should be executed in the submitted job.
 
-When a ``job`` is submitted, it will also use variables defined in ``docker/.env.base``, though these
+When a ``job`` is submitted, it will also use variables defined in ``docker/.env``, though these
 should be correct by default.
 
 Exporting to singularity image
@@ -97,14 +97,14 @@ To export to a singularity image, execute the following command:
 
 .. code:: bash
 
-    ./docker/cluster/cluster_interface.sh push [profile]
+    ./docker/cluster/cluster_interface.sh push [target]
 
 This command will create a singularity image under ``docker/exports`` directory and
 upload it to the defined location on the cluster. It requires that you have previously
 built the image with the ``container.py`` interface. Be aware that creating the singularity
 image can take a while.
-``[profile]`` is an optional argument that specifies the container profile to be used. If no profile is
-specified, the default profile ``base`` will be used.
+``[target]`` is an optional argument that specifies the container target to be used. If no target is
+specified, the default target ``base`` will be used.
 
 .. note::
   By default, the singularity image is created without root access by providing the ``--fakeroot`` flag to
@@ -172,15 +172,15 @@ To submit a job on the cluster, the following command can be used:
 
 .. code:: bash
 
-    ./docker/cluster/cluster_interface.sh job [profile] "argument1" "argument2" ...
+    ./docker/cluster/cluster_interface.sh job [target] "argument1" "argument2" ...
 
 This command will copy the latest changes in your code to the cluster and submit a job. Please ensure that
 your Python executable's output is stored under ``isaaclab/logs`` as this directory will be copied again
 from the compute node to ``CLUSTER_ISAACLAB_DIR``.
 
-``[profile]`` is an optional argument that specifies which singularity image corresponding to the  container profile
-will be used. If no profile is specified, the default profile ``base`` will be used. The profile has be defined
-directlty after the ``job`` command. All other arguments are passed to the Python executable. If no profile is
+``[target]`` is an optional argument that specifies which singularity image corresponding to the  container target
+will be used. If no target is specified, the default target ``base`` will be used. The target has be defined
+directlty after the ``job`` command. All other arguments are passed to the Python executable. If no target is
 defined, all arguments are passed to the Python executable.
 
 The training arguments are passed to the Python executable. As an example, the standard

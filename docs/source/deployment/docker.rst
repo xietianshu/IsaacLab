@@ -73,13 +73,16 @@ Directory Organization
 The root of the Isaac Lab repository contains the ``docker`` directory that has various files and scripts
 needed to run Isaac Lab inside a Docker container. A subset of these are summarized below:
 
-* ``Dockerfile.base``: Defines the isaaclab image by overlaying Isaac Lab dependencies onto the Isaac Sim Docker image.
-  ``Dockerfiles`` which end with something else, (i.e. ``Dockerfile.ros2``) build an `image_extension <#isaac-lab-image-extensions>`_.
-* ``docker-compose.yaml``: Creates mounts to allow direct editing of Isaac Lab code from the host machine that runs
-  the container. It also creates several named volumes such as ``isaac-cache-kit`` to
+* ``Dockerfile``: Defines the isaac-lab images by overlaying Isaac Lab dependencies in various stages onto the Isaac Sim Docker image.
+* ``cfgs/base.yaml``: Defines the compose project for the ``base`` stage in ``Dockerfile``. The ``ros2.yaml`` and ``custom.yaml`` files
+  `extend`_ the ``isaac-lab`` service from ``base.yaml`` and do the same for their corresponding stages in the ``Dockerfile``.
+* ``cfgs/isaacsim_volumes.yaml``: Defines several named volumes such as ``isaac-cache-kit`` to
   store frequently re-used resources compiled by Isaac Sim, such as shaders, and to retain logs, data, and documents.
-* ``base.env``: Stores environment variables required for the ``base`` build process and the container itself. ``.env``
-  files which end with something else (i.e. ``.env.ros2``) define these for `image_extension <#isaac-lab-image-extensions>`_.
+* ``cfgs/isaaclab_volumes.yaml``: Defines bind-mounts to allow direct editing of Isaac Lab code from the host machine that runs
+  the container, as well as a few volumes for storing logs and data. See ``container.py copy`` for more information on accessing
+  this data on the host machine.
+* ``.env``: Stores environment variables which are used directly in the defining the image, or else
+  interpolated in the various ``cfg`` yaml files.
 * ``container.py``: A script that interfaces with tools in ``utils`` to configure and build the image,
   and run and interact with the container.
 
@@ -90,7 +93,7 @@ Running the Container
 
     The docker container copies all the files from the repository into the container at the
     location ``/workspace/isaaclab`` at build time. This means that any changes made to the files in the container would not
-    normally be reflected in the repository after the image has been built, i.e. after ``./container.py start`` is run.
+    normally be reflected in the repository after the image has been built, i.e. after ``python container.py start`` is run.
 
     For a faster development cycle, we mount the following directories in the Isaac Lab repository into the container
     so that you can edit their files from the host machine:
@@ -104,13 +107,14 @@ The script ``container.py`` parallels three basic ``docker compose`` commands. E
 or else they will default to image_extension ``base``:
 
 1. ``start``: This builds the image and brings up the container in detached mode (i.e. in the background).
-2. ``enter``: This begins a new bash process in an existing isaaclab container, and which can be exited
-   without bringing down the container.
-3. ``config``: This outputs the compose.yaml which would be result from the inputs given to ``container.py start``. This command is useful
+2. ``build``: This builds the image but does not bring up the container.
+3. ``config``: This outputs the compose.yaml which would be result from the inputs given to ``python container.py start``. This command is useful
    for debugging a compose configuration.
 4. ``copy``: This copies the ``logs``, ``data_storage`` and ``docs/_build`` artifacts, from the ``isaac-lab-logs``, ``isaac-lab-data`` and ``isaac-lab-docs``
    volumes respectively, to the ``docker/artifacts`` directory. These artifacts persist between docker container instances and are shared between image extensions.
-5. ``stop``: This brings down the container and removes it.
+5. ``enter``: This begins a new bash process in an existing isaaclab container, and which can be exited
+   without bringing down the container.
+6. ``stop``: This brings down the container and removes it.
 
 The following shows how to launch the container in a detached state and enter it:
 
@@ -171,8 +175,11 @@ interpreter. You can use the following commands to run the Python interpreter:
 Understanding the mounted volumes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``docker-compose.yaml`` file creates several named volumes that are mounted to the container.
+The ``IsaacLabContainerInterface`` creates several named volumes that are mounted to the container by default.
 These are summarized below:
+
+isaacsim_volumes.yaml
+~~~~~~~~~~~~~~~~~~~~~
 
 * ``isaac-cache-kit``: This volume is used to store cached Kit resources (``/isaac-sim/kit/cache`` in container)
 * ``isaac-cache-ov``: This volume is used to store cached OV resources (``/root/.cache/ov`` in container)
@@ -183,6 +190,10 @@ These are summarized below:
 * ``isaac-carb-logs``: This volume is used to store logs generated by carb. (``/isaac-sim/kit/logs/Kit/Isaac-Sim`` in container)
 * ``isaac-data``: This volume is used to store data generated by Omniverse. (``/root/.local/share/ov/data`` in container)
 * ``isaac-docs``: This volume is used to store documents generated by Omniverse. (``/root/Documents`` in container)
+
+isaaclab_volumes.yaml
+~~~~~~~~~~~~~~~~~~~~~
+
 * ``isaac-lab-docs``: This volume is used to store documentation of Isaac Lab when built inside the container. (``/workspace/isaaclab/docs/_build`` in container)
 * ``isaac-lab-logs``: This volume is used to store logs generated by Isaac Lab workflows when run inside the container. (``/workspace/isaaclab/logs`` in container)
 * ``isaac-lab-data``: This volume is used to store whatever data users may want to preserve between container runs. (``/workspace/isaaclab/data_storage`` in container)
@@ -198,13 +209,14 @@ To view the contents of these volumes, you can use the following command:
 
 
 
-Isaac Lab Image Extensions
---------------------------
+Isaac Lab Target Stages
+-----------------------
 
 The produced image depends upon the arguments passed to ``container.py start`` and ``container.py stop``. These
-commands accept an ``image_extension`` as an additional argument. If no argument is passed, then these
-commands default to ``base``. Currently, the only valid ``image_extension`` arguments are (``base``, ``ros2``).
-Only one ``image_extension`` can be passed at a time, and the produced container will be named ``isaac-lab-${profile}``.
+commands accept a ``target`` as an additional argument, which reflect the `stages`_ within the Dockerfile. If no argument is passed, then these
+commands default to ``base``. Currently, the only valid ``target`` arguments are (``base``, ``ros2``, ``custom``). ``cfgs/custom.yaml`` and
+the ``custom`` Dockerfile stage are intended  to act as a template to demonstrate how one could add their own Dockerfile stage and use it
+with the ``IsaacLabContainerInterface``. Only one ``target`` can be passed at a time, and the produced container will be named ``isaac-lab-${target}``.
 
 .. code:: bash
 
@@ -217,16 +229,15 @@ Only one ``image_extension`` can be passed at a time, and the produced container
     # stop ros2 container
     python docker/container.py stop ros2
 
-The passed ``image_extension`` argument will build the image defined in ``Dockerfile.${image_extension}``,
-with the corresponding `profile`_ in the ``docker-compose.yaml`` and the envars from ``.env.${image_extension}``
-in addition to the ``.env.base``, if any.
+The passed ``target`` argument will build the image defined in ``Dockerfile`` up the stage ``target``,
+with the corresponding ``.yaml`` in the ``docker/cfgs`` directory, down the chain of `extensions`_.
 
-ROS2 Image Extension
-~~~~~~~~~~~~~~~~~~~~
+ROS2 Image Stage
+~~~~~~~~~~~~~~~~
 
-In ``Dockerfile.ros2``, the container installs ROS2 Humble via an `apt package`_, and it is sourced in the ``.bashrc``.
-The exact version is specified by the variable ``ROS_APT_PACKAGE`` in the ``.env.ros2`` file,
-defaulting to ``ros-base``. Other relevant ROS2 variables are also specified in the ``.env.ros2`` file,
+In ``Dockerfile`` stage ``ros2``, the image installs ROS2 Humble via an `apt package`_, and it is sourced in the ``.bashrc``.
+The exact version is specified by the variable ``ROS_APT_PACKAGE`` in the ``cfgs/ros2.yaml`` file,
+defaulting to ``ros-base``. Other relevant ROS2 variables are also specified in the ``cfgs/ros2.yaml`` file,
 including variables defining the `various middleware`_ options. The container defaults to ``FastRTPS``, but ``CylconeDDS``
 is also supported. Each of these middlewares can be `tuned`_ using their corresponding ``.xml`` files under ``docker/.ros``.
 
@@ -245,15 +256,8 @@ If you see the following error when building the container:
     Error response from daemon: invalid mount config for type "bind": bind source path does not exist: ${HOME}/.Xauthority
 
 This means that the ``.Xauthority`` file is not present in the home directory of the host machine.
-The portion of the docker-compose.yaml that enables this is commented out by default, so this shouldn't
-happen unless it has been altered. This file is required for X11 forwarding to work. To fix this, you can
-create an empty ``.Xauthority`` file in your home directory.
-
-.. code:: bash
-
-    touch ${HOME}/.Xauthority
-
-A similar error but requires a different fix:
+This shouldn't happen as we construct and mount a valid ``.xauth`` file under the ``__ISAACLAB_TMP_DIR``, defined in
+``cfgs/x11.yaml``. If this occurs, try deleting the ``.container.cfg`` file and restarting the container.
 
 .. code:: text
 
@@ -261,9 +265,8 @@ A similar error but requires a different fix:
     Error response from daemon: invalid mount config for type "bind": bind source path does not exist: /tmp/.X11-unix
 
 This means that the folder/files are either not present or not accessible on the host machine.
-The portion of the docker-compose.yaml that enables this is commented out by default, so this
-shouldn't happen unless it has been altered. This usually happens when you have multiple docker
-versions installed on your machine. To fix this, you can try the following:
+This usually happens when you have multiple docker versions installed on your machine. To fix
+this, you can try the following:
 
 * Remove all docker versions from your machine.
 
@@ -286,8 +289,8 @@ Mozilla Firefox browser on which WebRTC works.
 
 Streaming is the only supported method for visualizing the Isaac GUI from within the container. The Omniverse Streaming Client
 is freely available from the Omniverse app, and is easy to use. The other streaming methods similarly require only a web browser.
-If users want to use X11 forwarding in order to have the apps behave as local GUI windows, they can uncomment the relevant portions
-in docker-compose.yaml.
+If users want to use X11 forwarding in order to have the apps behave as local GUI windows, they can enable it at runtime
+or in the ``.container.cfg``.
 
 
 .. _`NVIDIA Omniverse EULA`: https://docs.omniverse.nvidia.com/platform/latest/common/NVIDIA_Omniverse_License_Agreement.html
@@ -299,8 +302,11 @@ in docker-compose.yaml.
 .. _`post-installation steps`: https://docs.docker.com/engine/install/linux-postinstall/
 .. _`Isaac Sim container`: https://catalog.ngc.nvidia.com/orgs/nvidia/containers/isaac-sim
 .. _`NGC API key`: https://docs.nvidia.com/ngc/gpu-cloud/ngc-user-guide/index.html#generating-api-key
+.. _`extend`: https://docs.docker.com/compose/multiple-compose-files/extends/
+.. _`extensions`: https://docs.docker.com/compose/multiple-compose-files/extends/
 .. _`several streaming clients`: https://docs.omniverse.nvidia.com/isaacsim/latest/installation/manual_livestream_clients.html
 .. _`known issue`: https://forums.developer.nvidia.com/t/unable-to-use-webrtc-when-i-run-runheadless-webrtc-sh-in-remote-headless-container/222916
+.. _`stages`: https://docs.docker.com/build/building/multi-stage/
 .. _`profile`: https://docs.docker.com/compose/compose-file/15-profiles/
 .. _`apt package`: https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html#install-ros-2-packages
 .. _`various middleware`: https://docs.ros.org/en/humble/How-To-Guides/Working-with-multiple-RMW-implementations.html
