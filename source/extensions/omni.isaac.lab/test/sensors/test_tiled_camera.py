@@ -20,6 +20,7 @@ import copy
 import numpy as np
 import random
 import unittest
+import torch
 
 import omni.isaac.core.utils.prims as prim_utils
 import omni.isaac.core.utils.stage as stage_utils
@@ -28,8 +29,9 @@ from omni.isaac.core.prims import GeometryPrim, RigidPrim
 from pxr import Gf, UsdGeom
 
 import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.sensors.camera import TiledCamera, TiledCameraCfg
+from omni.isaac.lab.sensors.camera import TiledCamera, TiledCameraCfg, Camera, CameraCfg
 from omni.isaac.lab.utils.timer import Timer
+from omni.isaac.lab.assets import RigidObjectCfg, RigidObject
 
 
 class TestTiledCamera(unittest.TestCase):
@@ -64,6 +66,8 @@ class TestTiledCamera(unittest.TestCase):
         """Stops simulator after each test."""
         # close all the opened viewport from before.
         rep.vp_manager.destroy_hydra_textures("Replicator")
+        # del cone object
+        self.cone_object = None
         # stop simulation
         # note: cannot use self.sim.stop() since it does one render step after stopping!! This doesn't make sense :(
         self.sim._timeline.stop()
@@ -299,12 +303,71 @@ class TestTiledCamera(unittest.TestCase):
                 self.assertGreater(im_data.mean().item(), 0.0)
         del camera
 
+    def test_output_equal_to_usdcamera(self):
+        """Test the camera position is moving with the RigidObject"""
+        # Create camera
+        camera_cfg = copy.deepcopy(self.camera_cfg)
+        camera_cfg.data_types = ["depth"]
+        camera_cfg.prim_path = "/World/Cube/Camera_tiled"
+        camera_tiled = TiledCamera(camera_cfg)
+
+        camera_cfg = CameraCfg(
+            height=128,
+            width=256,
+            offset=CameraCfg.OffsetCfg(pos=(0.0, 0.0, 4.0), rot=(0.0, 0.0, 1.0, 0.0), convention="ros"),
+            prim_path="/World/Cube/Camera_usd",
+            update_period=0,
+            data_types=["depth"],
+            spawn=sim_utils.PinholeCameraCfg(
+                focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955, clipping_range=(0.1, 1.0e5)
+            ),
+        )
+        camera_usd = Camera(camera_cfg)
+
+        # Play sim
+        self.sim.reset()
+
+        # Simulate for a few steps
+        # note: This is a workaround to ensure that the textures are loaded.
+        #   Check "Known Issues" section in the documentation for more details.
+        for _ in range(5):
+            self.sim.step()        
+
+        camera_tiled.update(self.dt)
+        camera_usd.update(self.dt)
+
+        # check for the same position
+        torch.testing.assert_close(camera_usd.data.pos_w, camera_tiled.data.pos_w)
+        torch.testing.assert_close(camera_usd.data.quat_w_world, camera_tiled.data.quat_w_world)
+        # check for the same output
+        torch.testing.assert_close(camera_usd.data.output["distance_to_image_plane"], camera_tiled.data.output["depth"])
+
+        # move the cube position set cube position
+        new_pos = self.cube_object.data.root_pos_w.clone()
+        new_pos[:, 2] += 1.0
+        self.cube_object.write_root_pose_to_sim(torch.concatenate((new_pos, self.cube_object.data.root_quat_w), dim=-1))
+
+        # Simulate for a few steps
+        # note: This is a workaround to ensure that the textures are loaded.
+        #   Check "Known Issues" section in the documentation for more details.
+        for _ in range(5):
+            self.sim.step()        
+
+        camera_tiled.update(self.dt)
+        camera_usd.update(self.dt)
+
+        # check for the same position
+        torch.testing.assert_close(camera_usd.data.pos_w, camera_tiled.data.pos_w)
+        torch.testing.assert_close(camera_usd.data.quat_w_world, camera_tiled.data.quat_w_world)
+        # check for the same output
+        torch.testing.assert_close(camera_usd.data.output["distance_to_image_plane"], camera_tiled.data.output["depth"])
+       
+
     """
     Helper functions.
     """
 
-    @staticmethod
-    def _populate_scene():
+    def _populate_scene(self):
         """Add prims to the scene."""
         # Ground-plane
         cfg = sim_utils.GroundPlaneCfg()
@@ -317,7 +380,7 @@ class TestTiledCamera(unittest.TestCase):
         random.seed(0)
         for i in range(10):
             # sample random position
-            position = np.random.rand(3) - np.asarray([0.05, 0.05, -1.0])
+            position = np.random.rand(3) - np.asarray([0.05, 0.05, -1.0])  # WHY IS THE POSITION IN Z NEGATIVE?
             position *= np.asarray([1.5, 1.5, 0.5])
             # create prim
             prim_type = random.choice(["Cube", "Sphere", "Cylinder"])
@@ -337,6 +400,20 @@ class TestTiledCamera(unittest.TestCase):
             # add rigid properties
             GeometryPrim(f"/World/Objects/Obj_{i:02d}", collision=True)
             RigidPrim(f"/World/Objects/Obj_{i:02d}", mass=5.0)
+        # add rigid object
+        cone_cfg = RigidObjectCfg(
+            prim_path="/World/Cone",
+            spawn=sim_utils.ConeCfg(
+                radius=0.1,
+                height=0.2,
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+                mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+                collision_props=sim_utils.CollisionPropertiesCfg(),
+                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0), metallic=0.2),
+            ),
+            init_state=RigidObjectCfg.InitialStateCfg(),
+        )
+        self.cube_object = RigidObject(cfg=cone_cfg)
 
 
 if __name__ == "__main__":

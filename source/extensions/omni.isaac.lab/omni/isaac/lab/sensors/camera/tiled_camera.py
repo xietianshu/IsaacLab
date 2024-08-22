@@ -125,6 +125,14 @@ class TiledCamera(Camera):
                 "Replicator was not found for rendering. Please use --enable_cameras to enable rendering."
             )
 
+        # Obtain current stage
+        stage = omni.usd.get_context().get_stage()
+        
+        # FIXME: TiledCamera currently does not move when being placed on Articulations and RigidObjects
+        prim = stage.GetPrimAtPath(self.cfg.prim_path)
+        if prim is None:
+            prim = stage.GetPrimAtPath()
+        
         # Initialize parent class
         SensorBase._initialize_impl(self)
         # Create a view for the sensor
@@ -142,8 +150,6 @@ class TiledCamera(Camera):
         # Create frame count buffer
         self._frame = torch.zeros(self._view.count, device=self._device, dtype=torch.long)
 
-        # Obtain current stage
-        stage = omni.usd.get_context().get_stage()
         # Convert all encapsulated prims to Camera
         for cam_prim_path in self._view.prim_paths:
             # Get camera prim
