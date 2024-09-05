@@ -153,11 +153,12 @@ def main():
         vz = -joint1_vel * PEND_POS_OFFSET[0] * torch.cos(joint1_pos)
 
         gt_linear_vel = torch.cat([vx, vy, vz], dim=-1)
-        ax = -joint1_vel * PEND_POS_OFFSET[0] * torch.sin(joint1_pos) - joint1_vel**2 * PEND_POS_OFFSET[0] * torch.cos(
+        
+        ax = -joint1_acc * PEND_POS_OFFSET[0] * torch.sin(joint1_pos) - joint1_vel**2 * PEND_POS_OFFSET[0] * torch.cos(
             joint1_pos
         )
         ay = torch.zeros_like(ax, device=world.device)
-        az = -joint1_vel * PEND_POS_OFFSET[0] * torch.cos(joint1_pos) + joint1_vel**2 * PEND_POS_OFFSET[0] * torch.sin(
+        az = -joint1_acc * PEND_POS_OFFSET[0] * torch.cos(joint1_pos) + joint1_vel**2 * PEND_POS_OFFSET[0] * torch.sin(
             joint1_pos
         )
         gt_linear_acc = torch.cat([ax, ay, az], dim=-1)
