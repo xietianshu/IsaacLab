@@ -1,0 +1,2 @@
+python /home/xts/.local/share/ov/pkg/isaac-sim-4.1.0/IsaacLab/source/standalone/workflows/rsl_rl/train.py --task Isaac-Velocity-Flat-Anymal-B-v0 --max_iterations 9999999 --resume True --headless
+python /home/xts/.local/share/ov/pkg/isaac-sim-4.1.0/IsaacLab/source/standalone/workflows/rsl_rl/play.py --task Isaac-Velocity-Flat-Anymal-B-v0 --num_envs 1
